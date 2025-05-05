@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { awsConfig } from '../aws-config';
+
+// Initialize DynamoDB client
+const client = new DynamoDBClient(awsConfig);
+const docClient = DynamoDBDocumentClient.from(client);
 
 function AdminOrders() {
   const [passwordInput, setPasswordInput] = useState('');
@@ -10,19 +17,67 @@ function AdminOrders() {
   const [quantity, setQuantity] = useState('1');
   const [size, setSize] = useState('small');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
-  const correctPassword = 'hisIsStaffHi1234Isco0L';
+  const correctPassword = 'thisIsStaffHi1234Isco0L';
 
-  // ✅ Load orders only once, on first mount
+  // Load orders from DynamoDB on mount
   useEffect(() => {
-    const saved = localStorage.getItem('orders');
-    if (saved) setOrders(JSON.parse(saved));
+    const fetchOrders = async () => {
+      try {
+        console.log('Attempting to fetch orders from DynamoDB...');
+        const command = new GetCommand({
+          TableName: "Orders",
+          Key: { id: "admin-orders" }
+        });
+        
+        const response = await docClient.send(command);
+        console.log('DynamoDB response:', response);
+        
+        if (response.Item && response.Item.orders) {
+          console.log('Orders loaded successfully:', response.Item.orders);
+          setOrders(response.Item.orders);
+        } else {
+          console.log('No existing orders found');
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError("Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
   }, []);
 
-  // ✅ Save orders whenever they change
+  // Save orders to DynamoDB whenever they change
   useEffect(() => {
-    localStorage.setItem('orders', JSON.stringify(orders));
+    const saveOrders = async () => {
+      try {
+        console.log('Attempting to save orders to DynamoDB...');
+        const command = new PutCommand({
+          TableName: "Orders",
+          Item: {
+            id: "admin-orders",
+            orders: orders,
+            updatedAt: new Date().toISOString()
+          }
+        });
+        
+        await docClient.send(command);
+        console.log('Orders saved successfully');
+      } catch (err) {
+        console.error("Error saving orders:", err);
+        setError("Failed to save orders");
+      }
+    };
+
+    if (orders.length > 0) {
+      saveOrders();
+    }
   }, [orders]);
 
   const handlePasswordSubmit = (e) => {
@@ -52,6 +107,14 @@ function AdminOrders() {
     updated.splice(index, 1);
     setOrders(updated);
   };
+
+  if (loading) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading orders...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: '2rem', textAlign: 'center', color: 'red' }}>{error}</div>;
+  }
 
   return (
     <>

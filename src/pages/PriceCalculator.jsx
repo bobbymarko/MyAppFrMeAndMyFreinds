@@ -7,7 +7,7 @@ function PriceCalculator() {
   const [attempts, setAttempts] = useState(0);
   const navigate = useNavigate();
 
-  const correctPassword = 'hisIsStaffHi1234Isco0L';
+  const correctPassword = 'thisIsStaffHi1234Isco0L';
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
