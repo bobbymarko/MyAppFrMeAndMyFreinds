@@ -76,20 +76,29 @@ function NonAdminOrders() {
     <div style={{ padding: '2rem', textAlign: 'center' }}>
       <h1>Orders</h1>
       <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
-        <select value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
+        <label htmlFor="nonadmin-item" style={{ display: 'none' }}>Item</label>
+        <select id="nonadmin-item" name="nonadmin-item" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
           <option value="spiralcone">spiralcone</option>
         </select>
-        <select value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: '0.5rem' }}>
+
+        <label htmlFor="nonadmin-quantity" style={{ display: 'none' }}>Quantity</label>
+        <select id="nonadmin-quantity" name="nonadmin-quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: '0.5rem' }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
-        <select value={size} onChange={(e) => setSize(e.target.value)} style={{ marginRight: '0.5rem' }}>
+
+        <label htmlFor="nonadmin-size" style={{ display: 'none' }}>Size</label>
+        <select id="nonadmin-size" name="nonadmin-size" value={size} onChange={(e) => setSize(e.target.value)} style={{ marginRight: '0.5rem' }}>
           <option value="small">small</option>
           <option value="medium">medium</option>
           <option value="large">large</option>
         </select>
+
+        <label htmlFor="nonadmin-name" style={{ display: 'none' }}>Name</label>
         <input
+          id="nonadmin-name"
+          name="nonadmin-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}

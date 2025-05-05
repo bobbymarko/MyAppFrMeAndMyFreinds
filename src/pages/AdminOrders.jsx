@@ -115,8 +115,10 @@ function AdminOrders() {
         <form className="tip-calculator" onSubmit={handlePasswordSubmit}>
           <div className="section">
             <div className="form-group">
-              <label>Enter Password</label>
+              <label htmlFor="admin-password">Enter Password</label>
               <input
+                id="admin-password"
+                name="admin-password"
                 type="password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
@@ -131,28 +133,33 @@ function AdminOrders() {
           <h1>Admin Orders</h1>
 
           <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
-            <select value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
+            <label htmlFor="admin-item" style={{ display: 'none' }}>Item</label>
+            <select id="admin-item" name="admin-item" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
               <option value="spiralcone">spiralcone</option>
             </select>
 
-            <select value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: '0.5rem' }}>
+            <label htmlFor="admin-quantity" style={{ display: 'none' }}>Quantity</label>
+            <select id="admin-quantity" name="admin-quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: '0.5rem' }}>
               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
 
-            <select value={size} onChange={(e) => setSize(e.target.value)} style={{ marginRight: '0.5rem' }}>
+            <label htmlFor="admin-size" style={{ display: 'none' }}>Size</label>
+            <select id="admin-size" name="admin-size" value={size} onChange={(e) => setSize(e.target.value)} style={{ marginRight: '0.5rem' }}>
               <option value="small">small</option>
               <option value="medium">medium</option>
               <option value="large">large</option>
             </select>
 
+            <label htmlFor="admin-name" style={{ display: 'none' }}>Name</label>
             <input
+              id="admin-name"
+              name="admin-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
               style={{ padding: '0.5rem', fontSize: '1rem', width: '30%' }}
             />
-
             <button
               type="submit"
               style={{
