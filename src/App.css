@@ -1,0 +1,23 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo-img {
+  display: block;
+  margin: 20px auto;
+  width: 50px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.HomePageText {
+  font-size: medium;
+}
+
+.Credits {
+  font-size: small;
+  color: yellow;
+}
