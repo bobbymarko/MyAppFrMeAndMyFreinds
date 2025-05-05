@@ -1,18 +1,61 @@
 import { useState, useEffect } from 'react';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { awsConfig } from '../aws-config';
+
+const client = new DynamoDBClient(awsConfig);
+const docClient = DynamoDBDocumentClient.from(client);
 
 function NonAdminOrders() {
-  const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('orders');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [orders, setOrders] = useState([]);
   const [item, setItem] = useState('spiralcone');
   const [quantity, setQuantity] = useState('1');
   const [size, setSize] = useState('small');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('orders', JSON.stringify(orders));
+    const fetchOrders = async () => {
+      try {
+        const command = new GetCommand({
+          TableName: "Orders",
+          Key: { id: "nonadmin-orders" }
+        });
+        const response = await docClient.send(command);
+        if (response.Item && response.Item.orders) {
+          setOrders(response.Item.orders);
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError("Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  useEffect(() => {
+    const saveOrders = async () => {
+      try {
+        const command = new PutCommand({
+          TableName: "Orders",
+          Item: {
+            id: "nonadmin-orders",
+            orders: orders,
+            updatedAt: new Date().toISOString()
+          }
+        });
+        await docClient.send(command);
+      } catch (err) {
+        console.error("Error saving orders:", err);
+        setError("Failed to save orders");
+      }
+    };
+    if (orders.length > 0) {
+      saveOrders();
+    }
   }, [orders]);
 
   const handleSubmit = (e) => {
@@ -24,27 +67,30 @@ function NonAdminOrders() {
     }
   };
 
+  if (loading) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading orders...</div>;
+  }
+  if (error) {
+    return <div style={{ padding: '2rem', textAlign: 'center', color: 'red' }}>{error}</div>;
+  }
+
   return (
     <div style={{ padding: '2rem', textAlign: 'center' }}>
       <h1>Orders</h1>
-
       <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
         <select value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
           <option value="spiralcone">spiralcone</option>
         </select>
-
         <select value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: '0.5rem' }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
-
         <select value={size} onChange={(e) => setSize(e.target.value)} style={{ marginRight: '0.5rem' }}>
           <option value="small">small</option>
           <option value="medium">medium</option>
           <option value="large">large</option>
         </select>
-
         <input
           type="text"
           value={name}
@@ -52,7 +98,6 @@ function NonAdminOrders() {
           placeholder="Enter your name"
           style={{ padding: '0.5rem', fontSize: '1rem', width: '30%' }}
         />
-
         <button
           type="submit"
           style={{
@@ -68,7 +113,6 @@ function NonAdminOrders() {
           Submit
         </button>
       </form>
-
       {orders.length === 0 ? (
         <p>No orders yet.</p>
       ) : (

@@ -1,4 +1,3 @@
-// AWS Configuration
 export const awsConfig = {
     region: "us-east-1",
     credentials: {
