@@ -75,9 +75,7 @@ function AdminOrders() {
       }
     };
 
-    if (orders.length > 0) {
-      saveOrders();
-    }
+    saveOrders();
   }, [orders]);
 
   const handlePasswordSubmit = (e) => {
