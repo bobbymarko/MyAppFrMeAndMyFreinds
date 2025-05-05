@@ -30,12 +30,10 @@ function AdminOrders() {
         console.log('Attempting to fetch orders from DynamoDB...');
         const command = new GetCommand({
           TableName: "Orders",
-          Key: { id: "admin-orders" }
+          Key: { id: "shared-orders" }
         });
-        
         const response = await docClient.send(command);
         console.log('DynamoDB response:', response);
-        
         if (response.Item && response.Item.orders) {
           console.log('Orders loaded successfully:', response.Item.orders);
           setOrders(response.Item.orders);
@@ -49,7 +47,6 @@ function AdminOrders() {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, []);
 
@@ -61,12 +58,11 @@ function AdminOrders() {
         const command = new PutCommand({
           TableName: "Orders",
           Item: {
-            id: "admin-orders",
+            id: "shared-orders",
             orders: orders,
             updatedAt: new Date().toISOString()
           }
         });
-        
         await docClient.send(command);
         console.log('Orders saved successfully');
       } catch (err) {
@@ -74,7 +70,6 @@ function AdminOrders() {
         setError("Failed to save orders");
       }
     };
-
     saveOrders();
   }, [orders]);
 

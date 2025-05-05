@@ -20,7 +20,7 @@ function NonAdminOrders() {
       try {
         const command = new GetCommand({
           TableName: "Orders",
-          Key: { id: "nonadmin-orders" }
+          Key: { id: "shared-orders" }
         });
         const response = await docClient.send(command);
         if (response.Item && response.Item.orders) {
@@ -42,7 +42,7 @@ function NonAdminOrders() {
         const command = new PutCommand({
           TableName: "Orders",
           Item: {
-            id: "nonadmin-orders",
+            id: "shared-orders",
             orders: orders,
             updatedAt: new Date().toISOString()
           }
@@ -53,9 +53,7 @@ function NonAdminOrders() {
         setError("Failed to save orders");
       }
     };
-    if (orders.length > 0) {
-      saveOrders();
-    }
+    saveOrders();
   }, [orders]);
 
   const handleSubmit = (e) => {
