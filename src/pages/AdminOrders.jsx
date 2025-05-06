@@ -153,6 +153,7 @@ function AdminOrders() {
             <label htmlFor="admin-item" style={{ display: 'none' }}>Item</label>
             <select id="admin-item" name="admin-item" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
               <option value="spiralcone">spiralcone</option>
+              <option value="bob's the best">bob's the best</option>
             </select>
 
             <label htmlFor="admin-quantity" style={{ display: 'none' }}>Quantity</label>
