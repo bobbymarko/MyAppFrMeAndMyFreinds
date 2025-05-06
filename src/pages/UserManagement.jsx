@@ -46,6 +46,7 @@ function UserManagement() {
         });
         await docClient.send(putCommand);
         fetchUsers(); // Refresh the list
+        setTimeout(() => window.location.reload(), 300);
       }
     } catch (err) {
       console.error("Error banning user:", err);
@@ -68,6 +69,7 @@ function UserManagement() {
         });
         await docClient.send(putCommand);
         fetchUsers(); // Refresh the list
+        setTimeout(() => window.location.reload(), 300);
       }
     } catch (err) {
       console.error("Error unbanning user:", err);
@@ -86,6 +88,7 @@ function UserManagement() {
         await docClient.send(deleteCommand);
         setSelectedUserId(null);
         fetchUsers(); // Refresh the list
+        setTimeout(() => window.location.reload(), 300);
       } catch (err) {
         console.error("Error deleting user:", err);
         setError("Failed to delete user");
