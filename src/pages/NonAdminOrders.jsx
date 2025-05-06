@@ -18,13 +18,16 @@ function NonAdminOrders() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const command = new GetCommand({
-          TableName: "Orders",
-          Key: { id: "shared-orders" }
-        });
-        const response = await docClient.send(command);
-        if (response.Item && response.Item.orders) {
-          setOrders(response.Item.orders);
+        // Only fetch if we don't have any orders
+        if (orders.length === 0) {
+          const command = new GetCommand({
+            TableName: "Orders",
+            Key: { id: "shared-orders" }
+          });
+          const response = await docClient.send(command);
+          if (response.Item && response.Item.orders) {
+            setOrders(response.Item.orders);
+          }
         }
       } catch (err) {
         console.error("Error fetching orders:", err);

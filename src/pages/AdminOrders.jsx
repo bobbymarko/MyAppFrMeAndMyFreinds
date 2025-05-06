@@ -27,18 +27,21 @@ function AdminOrders() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        console.log('Attempting to fetch orders from DynamoDB...');
-        const command = new GetCommand({
-          TableName: "Orders",
-          Key: { id: "shared-orders" }
-        });
-        const response = await docClient.send(command);
-        console.log('DynamoDB response:', response);
-        if (response.Item && response.Item.orders) {
-          console.log('Orders loaded successfully:', response.Item.orders);
-          setOrders(response.Item.orders);
-        } else {
-          console.log('No existing orders found');
+        // Only fetch if we don't have any orders
+        if (orders.length === 0) {
+          console.log('Attempting to fetch orders from DynamoDB...');
+          const command = new GetCommand({
+            TableName: "Orders",
+            Key: { id: "shared-orders" }
+          });
+          const response = await docClient.send(command);
+          console.log('DynamoDB response:', response);
+          if (response.Item && response.Item.orders) {
+            console.log('Orders loaded successfully:', response.Item.orders);
+            setOrders(response.Item.orders);
+          } else {
+            console.log('No existing orders found');
+          }
         }
       } catch (err) {
         console.error("Error fetching orders:", err);
