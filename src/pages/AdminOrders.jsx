@@ -50,46 +50,6 @@ function AdminOrders() {
     fetchOrders();
   }, []);
 
-  // Save orders to DynamoDB whenever they change
-  useEffect(() => {
-    const saveOrders = async () => {
-      try {
-        const key = "shared-orders";
-        console.log('[AdminOrders] Saving orders to DynamoDB with key:', key, orders);
-        // Fetch latest orders
-        const getCommand = new GetCommand({
-          TableName: "Orders",
-          Key: { id: key }
-        });
-        const latestResponse = await docClient.send(getCommand);
-        let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
-        // Merge local changes (add only new orders)
-        let mergedOrders = orders;
-        if (orders.length > latestOrders.length) {
-          // Add new orders to the latest list
-          mergedOrders = [...latestOrders, ...orders.slice(latestOrders.length)];
-        } else if (orders.length < latestOrders.length) {
-          // If local is behind, use latest
-          mergedOrders = latestOrders;
-        }
-        const putCommand = new PutCommand({
-          TableName: "Orders",
-          Item: {
-            id: key,
-            orders: mergedOrders,
-            updatedAt: new Date().toISOString()
-          }
-        });
-        await docClient.send(putCommand);
-        console.log('[AdminOrders] Orders saved successfully with key:', key, mergedOrders);
-        setOrders(mergedOrders); // Ensure local state is in sync
-      } catch (err) {
-        console.error("[AdminOrders] Error saving orders:", err);
-      }
-    };
-    saveOrders();
-  }, [orders]);
-
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
     if (passwordInput === correctPassword) {
@@ -127,10 +87,7 @@ function AdminOrders() {
       if (index < latestOrders.length) {
         latestOrders.splice(index, 1);
         
-        // Update local state
-        setOrders(latestOrders);
-        
-        // Save to DynamoDB
+        // Save to DynamoDB first
         const putCommand = new PutCommand({
           TableName: "Orders",
           Item: {
@@ -141,6 +98,9 @@ function AdminOrders() {
         });
         await docClient.send(putCommand);
         console.log('[AdminOrders] Order deleted and saved successfully');
+        
+        // Only update local state after successful save
+        setOrders(latestOrders);
       } else {
         console.error('[AdminOrders] Index out of bounds for deletion');
       }
@@ -157,6 +117,43 @@ function AdminOrders() {
       }
     }
   };
+
+  // Save orders to DynamoDB only when new orders are added
+  useEffect(() => {
+    const saveOrders = async () => {
+      // Skip if orders array is empty (initial load)
+      if (orders.length === 0) return;
+      
+      try {
+        const key = "shared-orders";
+        console.log('[AdminOrders] Saving orders to DynamoDB with key:', key, orders);
+        // Fetch latest orders
+        const getCommand = new GetCommand({
+          TableName: "Orders",
+          Key: { id: key }
+        });
+        const latestResponse = await docClient.send(getCommand);
+        let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
+        
+        // Only save if we have new orders
+        if (orders.length > latestOrders.length) {
+          const putCommand = new PutCommand({
+            TableName: "Orders",
+            Item: {
+              id: key,
+              orders: orders,
+              updatedAt: new Date().toISOString()
+            }
+          });
+          await docClient.send(putCommand);
+          console.log('[AdminOrders] Orders saved successfully with key:', key, orders);
+        }
+      } catch (err) {
+        console.error("[AdminOrders] Error saving orders:", err);
+      }
+    };
+    saveOrders();
+  }, [orders]);
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading orders...</div>;
