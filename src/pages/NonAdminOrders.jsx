@@ -6,14 +6,38 @@ import { awsConfig } from '../aws-config';
 const client = new DynamoDBClient(awsConfig);
 const docClient = DynamoDBDocumentClient.from(client);
 
+function getUserId() {
+  return localStorage.getItem('userId');
+}
+
 function NonAdminOrders() {
   const [orders, setOrders] = useState([]);
   const [item, setItem] = useState('spiralcone');
   const [quantity, setQuantity] = useState('1');
   const [size, setSize] = useState('small');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      const userId = getUserId();
+      if (!userId) return;
+      try {
+        const command = new GetCommand({
+          TableName: "Users",
+          Key: { id: userId }
+        });
+        const response = await docClient.send(command);
+        if (response.Item && response.Item.username) {
+          setUsername(response.Item.username);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchUsername();
+  }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -27,7 +51,6 @@ function NonAdminOrders() {
           setOrders(response.Item.orders);
         }
       } catch (err) {
-        console.error("Error fetching orders:", err);
         setError("Failed to load orders");
       } finally {
         setLoading(false);
@@ -40,21 +63,16 @@ function NonAdminOrders() {
     const saveOrders = async () => {
       try {
         const key = "shared-orders";
-        console.log('[NonAdminOrders] Saving orders to DynamoDB with key:', key, orders);
-        // Fetch latest orders
         const getCommand = new GetCommand({
           TableName: "Orders",
           Key: { id: key }
         });
         const latestResponse = await docClient.send(getCommand);
         let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
-        // Merge local changes (add only new orders)
         let mergedOrders = orders;
         if (orders.length > latestOrders.length) {
-          // Add new orders to the latest list
           mergedOrders = [...latestOrders, ...orders.slice(latestOrders.length)];
         } else if (orders.length < latestOrders.length) {
-          // If local is behind, use latest
           mergedOrders = latestOrders;
         }
         const putCommand = new PutCommand({
@@ -66,10 +84,8 @@ function NonAdminOrders() {
           }
         });
         await docClient.send(putCommand);
-        console.log('[NonAdminOrders] Orders saved successfully with key:', key, mergedOrders);
-        setOrders(mergedOrders); // Ensure local state is in sync
+        setOrders(mergedOrders);
       } catch (err) {
-        console.error("[NonAdminOrders] Error saving orders:", err);
         setError("Failed to save orders");
       }
     };
@@ -78,10 +94,9 @@ function NonAdminOrders() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (name.trim() !== '') {
-      const formattedOrder = `${name.trim()} ordered ${quantity} ${size} ${item}${quantity > 1 ? 's' : ''}`;
+    if (username.trim() !== '') {
+      const formattedOrder = `${username} ordered ${quantity} ${size} ${item}${quantity > 1 ? 's' : ''}`;
       setOrders([...orders, formattedOrder]);
-      setName('');
     }
   };
 
@@ -114,17 +129,6 @@ function NonAdminOrders() {
           <option value="medium">medium</option>
           <option value="large">large</option>
         </select>
-
-        <label htmlFor="nonadmin-name" style={{ display: 'none' }}>Name</label>
-        <input
-          id="nonadmin-name"
-          name="nonadmin-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your name"
-          style={{ padding: '0.5rem', fontSize: '1rem', width: '30%' }}
-        />
         <button
           type="submit"
           style={{
