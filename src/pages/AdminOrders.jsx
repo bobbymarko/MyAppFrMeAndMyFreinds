@@ -114,26 +114,47 @@ function AdminOrders() {
 
   const handleDelete = async (index) => {
     try {
-      const updated = [...orders];
-      updated.splice(index, 1);
-      setOrders(updated);
-      
-      // Immediately save to DynamoDB
+      // First fetch the latest orders from DynamoDB
       const key = "shared-orders";
-      const putCommand = new PutCommand({
+      const getCommand = new GetCommand({
         TableName: "Orders",
-        Item: {
-          id: key,
-          orders: updated,
-          updatedAt: new Date().toISOString()
-        }
+        Key: { id: key }
       });
-      await docClient.send(putCommand);
-      console.log('[AdminOrders] Order deleted and saved successfully');
+      const latestResponse = await docClient.send(getCommand);
+      let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
+      
+      // Remove the order at the specified index
+      if (index < latestOrders.length) {
+        latestOrders.splice(index, 1);
+        
+        // Update local state
+        setOrders(latestOrders);
+        
+        // Save to DynamoDB
+        const putCommand = new PutCommand({
+          TableName: "Orders",
+          Item: {
+            id: key,
+            orders: latestOrders,
+            updatedAt: new Date().toISOString()
+          }
+        });
+        await docClient.send(putCommand);
+        console.log('[AdminOrders] Order deleted and saved successfully');
+      } else {
+        console.error('[AdminOrders] Index out of bounds for deletion');
+      }
     } catch (err) {
       console.error("[AdminOrders] Error deleting order:", err);
-      // Revert the local state if DynamoDB update fails
-      setOrders(orders);
+      // Refresh orders from DynamoDB to ensure consistency
+      const getCommand = new GetCommand({
+        TableName: "Orders",
+        Key: { id: "shared-orders" }
+      });
+      const response = await docClient.send(getCommand);
+      if (response.Item && response.Item.orders) {
+        setOrders(response.Item.orders);
+      }
     }
   };
 
