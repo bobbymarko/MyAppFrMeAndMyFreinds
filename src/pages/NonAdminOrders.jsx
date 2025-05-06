@@ -41,33 +41,17 @@ function NonAdminOrders() {
       try {
         const key = "shared-orders";
         console.log('[NonAdminOrders] Saving orders to DynamoDB with key:', key, orders);
-        // Fetch latest orders
-        const getCommand = new GetCommand({
-          TableName: "Orders",
-          Key: { id: key }
-        });
-        const latestResponse = await docClient.send(getCommand);
-        let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
-        // Merge local changes (add only new orders)
-        let mergedOrders = orders;
-        if (orders.length > latestOrders.length) {
-          // Add new orders to the latest list
-          mergedOrders = [...latestOrders, ...orders.slice(latestOrders.length)];
-        } else if (orders.length < latestOrders.length) {
-          // If local is behind, use latest
-          mergedOrders = latestOrders;
-        }
+        
         const putCommand = new PutCommand({
           TableName: "Orders",
           Item: {
             id: key,
-            orders: mergedOrders,
+            orders: orders,
             updatedAt: new Date().toISOString()
           }
         });
         await docClient.send(putCommand);
-        console.log('[NonAdminOrders] Orders saved successfully with key:', key, mergedOrders);
-        setOrders(mergedOrders); // Ensure local state is in sync
+        console.log('[NonAdminOrders] Orders saved successfully with key:', key, orders);
       } catch (err) {
         console.error("[NonAdminOrders] Error saving orders:", err);
         setError("Failed to save orders");
