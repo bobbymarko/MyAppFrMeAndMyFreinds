@@ -15,6 +15,7 @@ function App() {
         <div className="page-content">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/Home" element={<Home />} />
             <Route path="/Thanks" element={<Thanks />} />
             <Route path="/orders" element={<NonAdminOrders />} />
             <Route path="/price-calculator" element={<PriceCalculator />} />
