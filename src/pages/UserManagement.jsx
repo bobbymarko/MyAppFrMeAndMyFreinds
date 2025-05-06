@@ -10,6 +10,7 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -30,9 +31,10 @@ function UserManagement() {
     }
   };
 
-  const handleBanUser = async (userId) => {
+  const handleBanUser = async () => {
+    if (!selectedUserId) return;
     try {
-      const user = users.find(u => u.id === userId);
+      const user = users.find(u => u.id === selectedUserId);
       if (user) {
         const putCommand = new PutCommand({
           TableName: "Users",
@@ -51,14 +53,38 @@ function UserManagement() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleUnbanUser = async () => {
+    if (!selectedUserId) return;
+    try {
+      const user = users.find(u => u.id === selectedUserId);
+      if (user) {
+        const putCommand = new PutCommand({
+          TableName: "Users",
+          Item: {
+            ...user,
+            isBanned: false,
+            bannedAt: undefined
+          }
+        });
+        await docClient.send(putCommand);
+        fetchUsers(); // Refresh the list
+      }
+    } catch (err) {
+      console.error("Error unbanning user:", err);
+      setError("Failed to unban user");
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUserId) return;
     if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       try {
         const deleteCommand = new DeleteCommand({
           TableName: "Users",
-          Key: { id: userId }
+          Key: { id: selectedUserId }
         });
         await docClient.send(deleteCommand);
+        setSelectedUserId(null);
         fetchUsers(); // Refresh the list
       } catch (err) {
         console.error("Error deleting user:", err);
@@ -78,54 +104,99 @@ function UserManagement() {
         <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>
       )}
       <div style={{ 
-        display: 'grid', 
-        gap: '1rem',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '1.5rem',
+        justifyContent: 'center',
+        marginBottom: '2rem'
       }}>
         {users.map(user => (
-          <div key={user.id} style={{
-            padding: '1rem',
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            backgroundColor: user.isBanned ? '#ffebee' : 'white'
-          }}>
-            <h3>{user.username}</h3>
-            <p>Created: {new Date(user.createdAt).toLocaleDateString()}</p>
-            {user.isBanned && (
-              <p style={{ color: 'red' }}>Banned on: {new Date(user.bannedAt).toLocaleDateString()}</p>
-            )}
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-              {!user.isBanned && (
-                <button
-                  onClick={() => handleBanUser(user.id)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Ban User
-                </button>
-              )}
-              <button
-                onClick={() => handleDeleteUser(user.id)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Delete User
-              </button>
+          <div
+            key={user.id}
+            onClick={() => setSelectedUserId(user.id)}
+            style={{
+              background: 'white',
+              color: 'black',
+              border: selectedUserId === user.id ? '3px solid #007bff' : '2px solid #eee',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+              padding: '0.8rem 1.2rem',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              transition: 'border 0.2s',
+              position: 'relative',
+              width: 'fit-content',
+              maxWidth: '100%',
+              wordBreak: 'break-word',
+            }}
+          >
+            <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'black', marginBottom: '0.5rem' }}>{user.username}</div>
+            <div style={{ fontSize: '0.95rem', color: 'black', marginBottom: '0.5rem' }}>
+              Created: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
             </div>
+            {user.isBanned && (
+              <div style={{ color: 'red', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                Banned on: {user.bannedAt ? new Date(user.bannedAt).toLocaleDateString() : 'Unknown'}
+              </div>
+            )}
           </div>
         ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+        {selectedUserId && users.find(u => u.id === selectedUserId)?.isBanned ? (
+          <button
+            onClick={handleUnbanUser}
+            style={{
+              padding: '0.7rem 1.5rem',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '1rem'
+            }}
+          >
+            Unban
+          </button>
+        ) : (
+          <button
+            onClick={handleBanUser}
+            disabled={!selectedUserId}
+            style={{
+              padding: '0.7rem 1.5rem',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: selectedUserId ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              opacity: selectedUserId ? 1 : 0.5
+            }}
+          >
+            Ban
+          </button>
+        )}
+        <button
+          onClick={handleDeleteUser}
+          disabled={!selectedUserId}
+          style={{
+            padding: '0.7rem 1.5rem',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: selectedUserId ? 'pointer' : 'not-allowed',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            opacity: selectedUserId ? 1 : 0.5
+          }}
+        >
+          Delete
+        </button>
       </div>
     </div>
   );

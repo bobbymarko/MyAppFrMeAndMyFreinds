@@ -25,18 +25,32 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (!isLoggedIn) {
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
         const command = new GetCommand({
           TableName: "Users",
-          Key: { id: "current-user" }
+          Key: { id: userId }
         });
         const response = await docClient.send(command);
         if (response.Item) {
           setIsAuthenticated(true);
-          // Check if user is admin (you can add this field to your Users table)
           setIsAdmin(response.Item.isAdmin || false);
+        } else {
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.error("Error checking auth:", err);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -64,9 +78,9 @@ function App() {
             <Route path="/orders" element={<NonAdminOrders />} />
             <Route path="/price-calculator" element={isAdmin ? <PriceCalculator /> : <Navigate to="/home" />} />
             <Route path="/sad" element={<Sad />} />
-            <Route path="/AAOMO" element={isAdmin ? <AdminDashboard /> : <Navigate to="/home" />} />
+            <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/home" />} />
             <Route path="/admin-orders" element={isAdmin ? <AdminOrders /> : <Navigate to="/home" />} />
-            <Route path="/user-management" element={isAdmin ? <UserManagement /> : <Navigate to="/home" />} />
+            <Route path="/user-management" element={isAdmin ? <UserManagement /> : <Navigate to="/AAOMO" />} />
           </Routes>
         </div>
       </div>

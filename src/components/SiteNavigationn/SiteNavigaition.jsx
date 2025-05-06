@@ -35,7 +35,7 @@ function SiteNavigaition() {
       boxShadow: '2px 0 5px rgba(0, 0, 0, 0.2)',
     }}>
       <p style={{ color: 'black', marginLeft: '10px', marginBottom: '5px' }}>Public</p>
-      <Link to="/home" style={buttonStyle}>Home</Link>
+      <Link to="/" style={buttonStyle}>Home</Link>
       <Link to="/orders" style={buttonStyle}>Order</Link>
       <Link to="/Thanks" style={buttonStyle}>Thanks</Link>
 
@@ -46,8 +46,7 @@ function SiteNavigaition() {
       }} />
 
       <p style={{ color: 'black', marginLeft: '10px', marginBottom: '5px' }}>Admin</p>
-      <Link to="/price-calculator" style={buttonStyle}>Price Calculator</Link>
-      <Link to="/AAOMO" style={buttonStyle}>Admin Managment</Link>
+      <Link to="/admin-dashboard" style={buttonStyle}>Admin Dashboard</Link>
     </nav>
   );
 }

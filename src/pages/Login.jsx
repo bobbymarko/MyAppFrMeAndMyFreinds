@@ -7,23 +7,36 @@ import { awsConfig } from '../aws-config';
 const client = new DynamoDBClient(awsConfig);
 const docClient = DynamoDBDocumentClient.from(client);
 
+function getOrCreateUserId() {
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem('userId', userId);
+  }
+  return userId;
+}
+
 function Login() {
   const [name, setName] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const userId = getOrCreateUserId();
 
   useEffect(() => {
     const checkExistingUser = async () => {
       try {
         const command = new GetCommand({
           TableName: "Users",
-          Key: { id: "current-user" }
+          Key: { id: userId }
         });
         const response = await docClient.send(command);
         if (response.Item && response.Item.username) {
-          // User already logged in, redirect to home
-          navigate('/home');
+          localStorage.setItem('isLoggedIn', 'true');
+          if (window.location.pathname !== '/') {
+            navigate('/');
+          }
         }
       } catch (err) {
         console.error("Error checking user:", err);
@@ -32,7 +45,7 @@ function Login() {
       }
     };
     checkExistingUser();
-  }, [navigate]);
+  }, [navigate, userId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,17 +57,29 @@ function Login() {
   const handleConfirm = async (isConfirmed) => {
     if (isConfirmed) {
       try {
+        let rawName = name.trim();
+        let isAdmin = false;
+        if (rawName.endsWith('/IAmAdmin/')) {
+          isAdmin = true;
+          rawName = rawName.replace(/\/IAmAdmin\/$/, '');
+        }
         // Save username to DynamoDB
         const putCommand = new PutCommand({
           TableName: "Users",
           Item: {
-            id: "current-user",
-            username: name.trim(),
-            createdAt: new Date().toISOString()
+            id: userId,
+            username: rawName,
+            createdAt: new Date().toISOString(),
+            isAdmin: isAdmin,
+            isLoggedIn: true
           }
         });
         await docClient.send(putCommand);
-        navigate('/home');
+        localStorage.setItem('isLoggedIn', 'true');
+        navigate('/');
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       } catch (err) {
         console.error("Error saving username:", err);
       }
