@@ -18,16 +18,13 @@ function NonAdminOrders() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // Only fetch if we don't have any orders
-        if (orders.length === 0) {
-          const command = new GetCommand({
-            TableName: "Orders",
-            Key: { id: "shared-orders" }
-          });
-          const response = await docClient.send(command);
-          if (response.Item && response.Item.orders) {
-            setOrders(response.Item.orders);
-          }
+        const command = new GetCommand({
+          TableName: "Orders",
+          Key: { id: "shared-orders" }
+        });
+        const response = await docClient.send(command);
+        if (response.Item && response.Item.orders) {
+          setOrders(response.Item.orders);
         }
       } catch (err) {
         console.error("Error fetching orders:", err);
@@ -44,17 +41,33 @@ function NonAdminOrders() {
       try {
         const key = "shared-orders";
         console.log('[NonAdminOrders] Saving orders to DynamoDB with key:', key, orders);
-        
+        // Fetch latest orders
+        const getCommand = new GetCommand({
+          TableName: "Orders",
+          Key: { id: key }
+        });
+        const latestResponse = await docClient.send(getCommand);
+        let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
+        // Merge local changes (add only new orders)
+        let mergedOrders = orders;
+        if (orders.length > latestOrders.length) {
+          // Add new orders to the latest list
+          mergedOrders = [...latestOrders, ...orders.slice(latestOrders.length)];
+        } else if (orders.length < latestOrders.length) {
+          // If local is behind, use latest
+          mergedOrders = latestOrders;
+        }
         const putCommand = new PutCommand({
           TableName: "Orders",
           Item: {
             id: key,
-            orders: orders,
+            orders: mergedOrders,
             updatedAt: new Date().toISOString()
           }
         });
         await docClient.send(putCommand);
-        console.log('[NonAdminOrders] Orders saved successfully with key:', key, orders);
+        console.log('[NonAdminOrders] Orders saved successfully with key:', key, mergedOrders);
+        setOrders(mergedOrders); // Ensure local state is in sync
       } catch (err) {
         console.error("[NonAdminOrders] Error saving orders:", err);
         setError("Failed to save orders");
@@ -86,7 +99,6 @@ function NonAdminOrders() {
         <label htmlFor="nonadmin-item" style={{ display: 'none' }}>Item</label>
         <select id="nonadmin-item" name="nonadmin-item" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
           <option value="spiralcone">spiralcone</option>
-          <option value="bob's the best">bob's the best</option>
         </select>
 
         <label htmlFor="nonadmin-quantity" style={{ display: 'none' }}>Quantity</label>
