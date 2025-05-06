@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import SiteNavigaition from './components/SiteNavigationn/SiteNavigaition';
 import Home from './pages/Home';
 import PriceCalculator from './pages/PriceCalculator';
@@ -14,7 +14,7 @@ function App() {
       <div className="App">
         <div className="page-content">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Navigate to="/home" />} />
             <Route path="/home" element={<Home />} />
             <Route path="/Thanks" element={<Thanks />} />
             <Route path="/orders" element={<NonAdminOrders />} />
