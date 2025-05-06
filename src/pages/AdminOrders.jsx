@@ -27,21 +27,18 @@ function AdminOrders() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // Only fetch if we don't have any orders
-        if (orders.length === 0) {
-          console.log('Attempting to fetch orders from DynamoDB...');
-          const command = new GetCommand({
-            TableName: "Orders",
-            Key: { id: "shared-orders" }
-          });
-          const response = await docClient.send(command);
-          console.log('DynamoDB response:', response);
-          if (response.Item && response.Item.orders) {
-            console.log('Orders loaded successfully:', response.Item.orders);
-            setOrders(response.Item.orders);
-          } else {
-            console.log('No existing orders found');
-          }
+        console.log('Attempting to fetch orders from DynamoDB...');
+        const command = new GetCommand({
+          TableName: "Orders",
+          Key: { id: "shared-orders" }
+        });
+        const response = await docClient.send(command);
+        console.log('DynamoDB response:', response);
+        if (response.Item && response.Item.orders) {
+          console.log('Orders loaded successfully:', response.Item.orders);
+          setOrders(response.Item.orders);
+        } else {
+          console.log('No existing orders found');
         }
       } catch (err) {
         console.error("Error fetching orders:", err);
@@ -59,17 +56,33 @@ function AdminOrders() {
       try {
         const key = "shared-orders";
         console.log('[AdminOrders] Saving orders to DynamoDB with key:', key, orders);
-        
+        // Fetch latest orders
+        const getCommand = new GetCommand({
+          TableName: "Orders",
+          Key: { id: key }
+        });
+        const latestResponse = await docClient.send(getCommand);
+        let latestOrders = (latestResponse.Item && latestResponse.Item.orders) ? latestResponse.Item.orders : [];
+        // Merge local changes (add only new orders)
+        let mergedOrders = orders;
+        if (orders.length > latestOrders.length) {
+          // Add new orders to the latest list
+          mergedOrders = [...latestOrders, ...orders.slice(latestOrders.length)];
+        } else if (orders.length < latestOrders.length) {
+          // If local is behind, use latest
+          mergedOrders = latestOrders;
+        }
         const putCommand = new PutCommand({
           TableName: "Orders",
           Item: {
             id: key,
-            orders: orders,
+            orders: mergedOrders,
             updatedAt: new Date().toISOString()
           }
         });
         await docClient.send(putCommand);
-        console.log('[AdminOrders] Orders saved successfully with key:', key, orders);
+        console.log('[AdminOrders] Orders saved successfully with key:', key, mergedOrders);
+        setOrders(mergedOrders); // Ensure local state is in sync
       } catch (err) {
         console.error("[AdminOrders] Error saving orders:", err);
       }
@@ -99,10 +112,29 @@ function AdminOrders() {
     }
   };
 
-  const handleDelete = (index) => {
-    const updated = [...orders];
-    updated.splice(index, 1);
-    setOrders(updated);
+  const handleDelete = async (index) => {
+    try {
+      const updated = [...orders];
+      updated.splice(index, 1);
+      setOrders(updated);
+      
+      // Immediately save to DynamoDB
+      const key = "shared-orders";
+      const putCommand = new PutCommand({
+        TableName: "Orders",
+        Item: {
+          id: key,
+          orders: updated,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      await docClient.send(putCommand);
+      console.log('[AdminOrders] Order deleted and saved successfully');
+    } catch (err) {
+      console.error("[AdminOrders] Error deleting order:", err);
+      // Revert the local state if DynamoDB update fails
+      setOrders(orders);
+    }
   };
 
   if (loading) {
@@ -140,7 +172,6 @@ function AdminOrders() {
             <label htmlFor="admin-item" style={{ display: 'none' }}>Item</label>
             <select id="admin-item" name="admin-item" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: '0.5rem' }}>
               <option value="spiralcone">spiralcone</option>
-              <option value="bob's the best">bob's the best</option>
             </select>
 
             <label htmlFor="admin-quantity" style={{ display: 'none' }}>Quantity</label>
