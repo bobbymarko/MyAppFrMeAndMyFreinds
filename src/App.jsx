@@ -14,7 +14,7 @@ function App() {
       <div className="App">
         <div className="page-content">
           <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/" element={<Navigate to="/home" />} />
             <Route path="/home" element={<Home />} />
             <Route path="/Thanks" element={<Thanks />} />
             <Route path="/orders" element={<NonAdminOrders />} />
