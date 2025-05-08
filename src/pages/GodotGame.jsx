@@ -19,7 +19,7 @@ const GodotGame = () => {
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
       position: 'fixed',
       top: 0,
-      left: 0,
+      left: '120px',
       right: 0,
       bottom: 0,
       width: '90vw',
