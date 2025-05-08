@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 function Passwordbox() {
-  const [password] = useState('hisIsStaffHi1234Isco0L'); // saved correct password
+  const [password] = useState('thisIsStaffHi1234Isco0L'); // saved correct password
   const [passwordInput, setPasswordInput] = useState('');
   const [accessGranted, setAccessGranted] = useState(false);
 

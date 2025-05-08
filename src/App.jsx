@@ -13,6 +13,9 @@ import UserManagement from './pages/UserManagement';
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { awsConfig } from './aws-config';
+import Game from './pages/Game';
+import Games from './pages/Games';
+import GodotGame from './pages/GodotGame';
 
 const client = new DynamoDBClient(awsConfig);
 const docClient = DynamoDBDocumentClient.from(client);
@@ -20,43 +23,48 @@ const docClient = DynamoDBDocumentClient.from(client);
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        if (!isLoggedIn) {
-          setIsAuthenticated(false);
-          setLoading(false);
-          return;
-        }
         const userId = localStorage.getItem('userId');
-        if (!userId) {
-          setIsAuthenticated(false);
-          setLoading(false);
-          return;
-        }
-        const command = new GetCommand({
-          TableName: "Users",
-          Key: { id: userId }
-        });
-        const response = await docClient.send(command);
-        if (response.Item) {
-          setIsAuthenticated(true);
-          setIsAdmin(response.Item.isAdmin || false);
+        
+        if (isLoggedIn && userId) {
+          try {
+            const command = new GetCommand({
+              TableName: "Users",
+              Key: { id: userId }
+            });
+            const response = await docClient.send(command);
+            if (response.Item) {
+              setIsAuthenticated(true);
+              setIsAdmin(response.Item.isAdmin || false);
+              setIsBanned(response.Item.isBanned || false);
+            } else {
+              // Only clear auth if we confirm the user doesn't exist
+              setIsAuthenticated(false);
+              localStorage.removeItem('isLoggedIn');
+              localStorage.removeItem('userId');
+            }
+          } catch (err) {
+            // If we can't reach DynamoDB, keep the user logged in
+            console.error("Error checking user status:", err);
+            setIsAuthenticated(true); // Keep them logged in
+          }
         } else {
           setIsAuthenticated(false);
         }
       } catch (err) {
         console.error("Error checking auth:", err);
-        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
     checkAuth();
-  }, []);
+  }, []); // Remove the interval check since we don't need constant polling
 
   if (loading) {
     return <div>Loading...</div>;
@@ -64,6 +72,10 @@ function App() {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  if (isBanned) {
+    return <Sad isBanned={true} />;
   }
 
   return (
@@ -81,6 +93,9 @@ function App() {
             <Route path="/admin-dashboard" element={isAdmin ? <AdminDashboard /> : <Navigate to="/home" />} />
             <Route path="/admin-orders" element={isAdmin ? <AdminOrders /> : <Navigate to="/home" />} />
             <Route path="/user-management" element={isAdmin ? <UserManagement /> : <Navigate to="/AAOMO" />} />
+            <Route path="/games" element={isAdmin ? <Games /> : <Navigate to="/home" />} />
+            <Route path="/target-game" element={isAdmin ? <Game /> : <Navigate to="/home" />} />
+            <Route path="/godot-game" element={isAdmin ? <GodotGame /> : <Navigate to="/home" />} />
           </Routes>
         </div>
       </div>

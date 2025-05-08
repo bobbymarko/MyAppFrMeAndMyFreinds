@@ -33,6 +33,11 @@ function Login() {
         });
         const response = await docClient.send(command);
         if (response.Item && response.Item.username) {
+          if (response.Item.isBanned) {
+            localStorage.setItem('isLoggedIn', 'true');
+            navigate('/sad');
+            return;
+          }
           localStorage.setItem('isLoggedIn', 'true');
           if (window.location.pathname !== '/') {
             navigate('/');
@@ -63,6 +68,15 @@ function Login() {
           isAdmin = true;
           rawName = rawName.replace(/\/IAmAdmin\/$/, '');
         }
+
+        // First check if user already exists to preserve their banned status
+        const getCommand = new GetCommand({
+          TableName: "Users",
+          Key: { id: userId }
+        });
+        const existingUser = await docClient.send(getCommand);
+        const isBanned = existingUser.Item?.isBanned || false;
+
         // Save username to DynamoDB
         const putCommand = new PutCommand({
           TableName: "Users",
@@ -71,17 +85,18 @@ function Login() {
             username: rawName,
             createdAt: new Date().toISOString(),
             isAdmin: isAdmin,
-            isLoggedIn: true
+            isLoggedIn: true,
+            isBanned: isBanned,
+            bannedAt: existingUser.Item?.bannedAt
           }
         });
         await docClient.send(putCommand);
         localStorage.setItem('isLoggedIn', 'true');
+        window.location.reload();
         navigate('/');
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
       } catch (err) {
         console.error("Error saving username:", err);
+        setError("Failed to save user data. Please try again.");
       }
     } else {
       setName('');

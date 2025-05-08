@@ -52,40 +52,36 @@ function AdminDashboard() {
   }
 
   return (
-    <div style={{ 
-      padding: '2rem', 
-      textAlign: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh'
-    }}>
+    <div style={{ textAlign: 'center', marginTop: '4rem' }}>
       <h1>Admin Dashboard</h1>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
         <button
-          onClick={() => navigate('/price-calculator')}
+          onClick={() => navigate('/user-management')}
           style={buttonStyle}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
         >
-          Price Calculator
+          User Management
         </button>
         <button
           onClick={() => navigate('/admin-orders')}
           style={buttonStyle}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
         >
-          Manage Orders
+          View Orders
         </button>
         <button
-          onClick={() => navigate('/user-management')}
+          onClick={() => navigate('/price-calculator')}
           style={buttonStyle}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
-          onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
         >
-          User Management
+          Price Calculator
+        </button>
+        <button
+          onClick={() => navigate('/games')}
+          style={{
+            ...buttonStyle,
+            backgroundColor: '#28a745',  // Green color for the games button
+            boxShadow: '0 4px 6px rgba(40, 167, 69, 0.2)'
+          }}
+        >
+          Games
         </button>
       </div>
     </div>

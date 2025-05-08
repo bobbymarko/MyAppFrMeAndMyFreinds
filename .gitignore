@@ -71,3 +71,9 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
+
+# Godot
+.godot/
+.import/
+export.cfg
+export_presets.cfg

@@ -1,0 +1,123 @@
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  min-height: 60vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.game-stats {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.game-stats p {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 1em;
+}
+
+.game-instructions {
+  margin-top: 10px;
+  font-size: 1em;
+  color: #aaa;
+  max-width: 600px;
+  line-height: 1.3;
+}
+
+.game-area {
+  position: relative;
+  width: 100%;
+  height: 40vh;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.target {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  cursor: pointer;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  will-change: left, top;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform-style: preserve-3d;
+}
+
+.target:hover {
+  transform: none !important;
+}
+
+.game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.game-over h2 {
+  font-size: 2em;
+  margin-bottom: 0.5rem;
+  color: #ff6b6b;
+}
+
+.game-over p {
+  font-size: 1.1em;
+  margin: 0.3rem 0;
+}
+
+.new-high-score {
+  color: #ffd700;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.start-button {
+  margin-top: 10px;
+  padding: 10px 30px;
+  font-size: 1em;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.start-button:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.start-button:active {
+  transform: translateY(0);
+} 

@@ -33,6 +33,7 @@ function SiteNavigaition() {
       alignItems: 'flex-start',
       paddingTop: '20px',
       boxShadow: '2px 0 5px rgba(0, 0, 0, 0.2)',
+      zIndex: 1000
     }}>
       <p style={{ color: 'black', marginLeft: '10px', marginBottom: '5px' }}>Public</p>
       <Link to="/" style={buttonStyle}>Home</Link>
