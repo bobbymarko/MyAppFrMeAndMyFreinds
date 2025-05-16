@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
 const SEEDS = [
-  { name: 'Carrot Seed', price: 5, color: 0xffa500 },
-  { name: 'Tomato Seed', price: 8, color: 0xff6347 },
-  { name: 'Corn Seed', price: 10, color: 0xffe135 },
+  { name: 'Carrot Seed', price: 5, color: 0xffa500, growthTime: 10 },
+  { name: 'Tomato Seed', price: 8, color: 0xff6347, growthTime: 15, reproduces: true },
+  { name: 'Corn Seed', price: 10, color: 0xffe135, growthTime: 20, reproduces: true },
 ];
 
 const SHOPS = [
@@ -58,6 +58,10 @@ function MyN() {
   const [userPlot, setUserPlot] = useState(null);
   const userId = getUserId();
   const [selectedInventoryIndex, setSelectedInventoryIndex] = useState(0);
+
+  // Add plant growth states
+  const [plantGrowth, setPlantGrowth] = useState({});
+  const [plantReproduction, setPlantReproduction] = useState({});
 
   // Place this here, NOT inside useEffect!
   function closeAllShops() {
@@ -387,6 +391,34 @@ function MyN() {
     };
     window.addEventListener('resize', handleResize);
 
+    // Add plant growth timer
+    const growthInterval = setInterval(() => {
+      setPlantGrowth(prev => {
+        const newGrowth = { ...prev };
+        Object.entries(plants).forEach(([pos, plantType]) => {
+          if (!newGrowth[pos]) {
+            newGrowth[pos] = 0;
+          }
+          newGrowth[pos] += 1;
+          
+          // Check for reproduction
+          const seed = SEEDS.find(s => s.name === plantType);
+          if (seed?.reproduces && newGrowth[pos] >= seed.growthTime * 2) {
+            setPlantReproduction(prev => {
+              const newRep = { ...prev };
+              if (!newRep[pos]) {
+                newRep[pos] = true;
+                // Add new seed to inventory
+                setInventory(inv => [...inv, { name: plantType, color: seed.color }]);
+              }
+              return newRep;
+            });
+          }
+        });
+        return newGrowth;
+      });
+    }, 1000);
+
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -395,6 +427,7 @@ function MyN() {
       renderer.domElement.removeEventListener('click', onMouseClick);
       mountRef.current?.removeChild(renderer.domElement);
       scene.clear();
+      clearInterval(growthInterval);
     };
   }, [userPlot, selectedBlock]);
 
@@ -409,9 +442,9 @@ function MyN() {
   // Planting handler
   useEffect(() => {
     if (plantingSeed && selectedBlock) {
-      // Check if the block is empty
       if (!plants[selectedBlock]) {
         setPlants(pl => ({ ...pl, [selectedBlock]: plantingSeed }));
+        setPlantGrowth(pl => ({ ...pl, [selectedBlock]: 0 }));
         setInventory(inv => {
           const idx = inv.findIndex(i => i.name === plantingSeed);
           if (idx !== -1) {
@@ -435,6 +468,71 @@ function MyN() {
       const [selected] = newInv.splice(index, 1);
       return [selected, ...newInv];
     });
+  }
+
+  // Add this function to create plant meshes
+  function createPlantMesh(plantType, growthStage) {
+    const group = new THREE.Group();
+    
+    if (plantType.includes('Carrot')) {
+      // Carrot plant
+      const stem = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+      const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      stemMesh.position.y = 1;
+      group.add(stemMesh);
+
+      const leaves = new THREE.ConeGeometry(0.5, 1, 8);
+      const leavesMesh = new THREE.Mesh(leaves, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      leavesMesh.position.y = 2;
+      group.add(leavesMesh);
+
+      if (growthStage === 'mature') {
+        const carrot = new THREE.ConeGeometry(0.3, 1, 8);
+        const carrotMesh = new THREE.Mesh(carrot, new THREE.MeshBasicMaterial({ color: 0xffa500 }));
+        carrotMesh.position.y = 0.5;
+        carrotMesh.rotation.x = Math.PI;
+        group.add(carrotMesh);
+      }
+    } else if (plantType.includes('Tomato')) {
+      // Tomato plant
+      const stem = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+      const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      stemMesh.position.y = 1;
+      group.add(stemMesh);
+
+      const leaves = new THREE.SphereGeometry(0.5, 8, 8);
+      const leavesMesh = new THREE.Mesh(leaves, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      leavesMesh.position.y = 1.5;
+      group.add(leavesMesh);
+
+      if (growthStage === 'mature') {
+        const tomato = new THREE.SphereGeometry(0.3, 8, 8);
+        const tomatoMesh = new THREE.Mesh(tomato, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+        tomatoMesh.position.y = 2;
+        group.add(tomatoMesh);
+      }
+    } else if (plantType.includes('Corn')) {
+      // Corn plant
+      const stem = new THREE.CylinderGeometry(0.1, 0.1, 3, 8);
+      const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      stemMesh.position.y = 1.5;
+      group.add(stemMesh);
+
+      const leaves = new THREE.BoxGeometry(0.5, 2, 0.1);
+      const leavesMesh = new THREE.Mesh(leaves, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
+      leavesMesh.position.y = 1.5;
+      leavesMesh.rotation.z = Math.PI / 4;
+      group.add(leavesMesh);
+
+      if (growthStage === 'mature') {
+        const corn = new THREE.CylinderGeometry(0.2, 0.2, 0.5, 8);
+        const cornMesh = new THREE.Mesh(corn, new THREE.MeshBasicMaterial({ color: 0xffe135 }));
+        cornMesh.position.y = 2.5;
+        group.add(cornMesh);
+      }
+    }
+
+    return group;
   }
 
   // Render overlays
@@ -793,13 +891,12 @@ function MyN() {
       {/* Planted plants on blocks */}
       {Object.entries(plants).map(([pos, seed]) => {
         const [x, z] = pos.split(',').map(Number);
-        const color = SEEDS.find(s=>s.name===seed)?.color || 0x00ff00;
-        const isUserPlot = userPlot && pos === `${userPlot.x},${userPlot.z}`;
-        return (
-          <div key={pos} style={{position:'absolute',left:`calc(50% + ${(x/200)*window.innerWidth/2}px)`,top:`calc(50% + ${(z/200)*window.innerHeight/2}px)`,pointerEvents:'none'}}>
-            <span style={{width:24,height:24,background:`#${color.toString(16)}`,borderRadius:12,display:'inline-block',border:isUserPlot?'3px solid #2196f3':'2px solid #fff'}}></span>
-          </div>
-        );
+        const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
+        const plantMesh = createPlantMesh(seed, growthStage);
+        plantMesh.position.set(x, 0, z);
+        scene.add(plantMesh);
+        
+        return null; // We're handling the 3D rendering in the scene
       })}
     </div>
   );
