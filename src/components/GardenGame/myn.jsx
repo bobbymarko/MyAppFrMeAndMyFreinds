@@ -858,37 +858,22 @@ function MyN() {
           Click to open Gear Shop
         </button>
       )}
-      {prompt && prompt.startsWith('plantblock:') && inventory.length > 0 && (
+      {prompt && prompt.startsWith('plantblock:') && (
         <button 
           onClick={() => {
-            const selectedItem = inventory[0];
-            if (!selectedItem) return;
-
-            if (selectedItem.name.includes('Seed')) {
-              // Only plant if the block is empty
-              const blockPos = prompt.split(':')[1];
-              if (!plants[blockPos]) {
-                setPlantingSeed(selectedItem.name);
-                console.log('Planting:', selectedItem.name);
+            const blockPos = prompt.split(':')[1];
+            if (!plants[blockPos]) {
+              // Find the first seed in inventory
+              const seedIndex = inventory.findIndex(item => item.name.includes('Seed'));
+              if (seedIndex !== -1) {
+                const seed = inventory[seedIndex];
+                setPlantingSeed(seed.name);
+                console.log('Planting:', seed.name);
               } else {
-                console.log('Block already has a plant');
+                console.log('No seeds in inventory');
               }
-            } else if (selectedItem.name === 'Watering Can') {
-              const blockPos = prompt.split(':')[1];
-              if (plants[blockPos]) {
-                console.log('Watering plant at:', blockPos);
-                // Add watering effect or growth boost here
-              }
-            } else if (selectedItem.name === 'Shovel' || selectedItem.name === 'Golden Shovel') {
-              const blockPos = prompt.split(':')[1];
-              if (plants[blockPos]) {
-                console.log('Removing plant at:', blockPos);
-                setPlants(pl => {
-                  const newPl = {...pl};
-                  delete newPl[blockPos];
-                  return newPl;
-                });
-              }
+            } else {
+              console.log('Block already has a plant');
             }
           }}
           style={{
@@ -909,19 +894,12 @@ function MyN() {
             color: '#000'
           }}
         >
-          {inventory[0].name.includes('Seed') && (
-            <>Click to plant <b>{inventory[0].name}</b></>
-          )}
-          {inventory[0].name === 'Watering Can' && (
-            <>Click to water plant</>
-          )}
-          {(inventory[0].name === 'Shovel' || inventory[0].name === 'Golden Shovel') && (
-            <>Click to remove plant</>
+          {inventory.some(item => item.name.includes('Seed')) ? (
+            <>Click to plant seed</>
+          ) : (
+            <>No seeds in inventory</>
           )}
         </button>
-      )}
-      {prompt && prompt.startsWith('plantblock:') && inventory.length === 0 && (
-        <div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'#fff8',padding:'8px 24px',borderRadius:8,fontWeight:600,zIndex:10, color: '#000'}}>No items in inventory</div>
       )}
       {/* Planted plants on blocks */}
       {Object.entries(plants).map(([pos, seed]) => {
