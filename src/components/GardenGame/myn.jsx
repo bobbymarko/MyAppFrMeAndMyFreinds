@@ -867,7 +867,15 @@ function MyN() {
               const seedIndex = inventory.findIndex(item => item.name.includes('Seed'));
               if (seedIndex !== -1) {
                 const seed = inventory[seedIndex];
-                setPlantingSeed(seed.name);
+                // Remove the seed from inventory first
+                setInventory(inv => {
+                  const newInv = [...inv];
+                  newInv.splice(seedIndex, 1);
+                  return newInv;
+                });
+                // Then plant it
+                setPlants(pl => ({ ...pl, [blockPos]: seed.name }));
+                setPlantGrowth(pl => ({ ...pl, [blockPos]: 0 }));
                 console.log('Planting:', seed.name);
               } else {
                 console.log('No seeds in inventory');
