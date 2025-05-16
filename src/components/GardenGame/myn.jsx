@@ -113,6 +113,52 @@ function MyN() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
+    // Movement state
+    let velocity = new THREE.Vector3(0, 0, 0);
+    const moveSpeed = 0.18;
+    const rotateSpeed = 0.03;
+    const damping = 0.85;
+    const keys = {};
+
+    function handleKeyDown(event) {
+      keys[event.key.toLowerCase()] = true;
+      if (event.key.toLowerCase() === 'i') setShowInventory(v => !v);
+      if (event.key.toLowerCase() === 'e') {
+        console.log('E pressed, current prompt:', prompt);
+        
+        // Handle shop interactions
+        if (prompt === 'buy') { 
+          closeAllShops(); 
+          setShowShop(true); 
+          console.log('Opening Buy Shop'); 
+        }
+        if (prompt === 'sell') { 
+          closeAllShops(); 
+          setShowShop(true); 
+          console.log('Opening Sell Shop'); 
+        }
+        if (prompt === 'eggs') { 
+          closeAllShops(); 
+          setShowEggs(true); 
+          console.log('Opening Eggs Shop'); 
+        }
+        if (prompt === 'gear') { 
+          closeAllShops(); 
+          setShowGear(true); 
+          console.log('Opening Gear Shop'); 
+        }
+        if (prompt === 'inventory') setShowInventory(v => !v);
+        if (prompt === 'bank') setShowBank(v => !v);
+      }
+    }
+
+    function handleKeyUp(event) {
+      keys[event.key.toLowerCase()] = false;
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
     // Create main platform
     const platformGeometry = new THREE.BoxGeometry(200, 10, 200);
     const platformMaterial = new THREE.MeshBasicMaterial({ color: 0x7cfc7c });
@@ -209,6 +255,31 @@ function MyN() {
       plantMeshes.set(pos, plantMesh);
     });
 
+    // Raycaster for clicking
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function onMouseClick(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(plantingBlocks);
+
+      if (intersects.length > 0) {
+        const block = intersects[0].object;
+        setSelectedBlock(block.userData.position);
+        
+        plantingBlocks.forEach(b => {
+          b.material.color.setHex(0x8B4513);
+        });
+        block.material.color.setHex(0xA0522D);
+      }
+    }
+
+    renderer.domElement.addEventListener('click', onMouseClick);
+
     // Animation
     function animate() {
       requestAnimationFrame(animate);
@@ -271,9 +342,80 @@ function MyN() {
       cameraRef.current.position.copy(characterRef.current.position).add(cameraOffset);
       cameraRef.current.lookAt(characterRef.current.position);
 
+      // Prompt logic (shops and plots)
+      let foundShop = false;
+      for (const shop of SHOPS) {
+        const dist = Math.sqrt(
+          Math.pow(characterRef.current.position.x - shop.x, 2) + Math.pow(characterRef.current.position.z - shop.z, 2)
+        );
+        if (dist < 15) {
+          console.log('Near shop:', shop.type, 'distance:', dist);
+          setPrompt(shop.type);
+          foundShop = true;
+          break;
+        }
+      }
+      if (!foundShop) {
+        if (selectedBlock && userPlot && selectedBlock === `${userPlot.x},${userPlot.z}`) {
+          const [bx, bz] = selectedBlock.split(',').map(Number);
+          const distToBlock = Math.sqrt(
+            Math.pow(characterRef.current.position.x - bx, 2) + Math.pow(characterRef.current.position.z - bz, 2)
+          );
+          if (distToBlock < 15) {
+            setPrompt('plantblock:' + selectedBlock);
+          } else {
+            setPrompt('');
+            closeAllShops();
+          }
+        } else {
+          setPrompt('');
+          closeAllShops();
+        }
+      }
+
       renderer.render(scene, cameraRef.current);
     }
     animate();
+
+    // Handle window resize
+    const handleResize = () => {
+      const width = mountRef.current.clientWidth;
+      const height = mountRef.current.clientHeight;
+      
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      
+      renderer.setSize(width, height);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Add plant growth timer
+    const growthInterval = setInterval(() => {
+      setPlantGrowth(prev => {
+        const newGrowth = { ...prev };
+        Object.entries(plants).forEach(([pos, plantType]) => {
+          if (!newGrowth[pos]) {
+            newGrowth[pos] = 0;
+          }
+          newGrowth[pos] += 1;
+          
+          // Check for reproduction
+          const seed = SEEDS.find(s => s.name === plantType);
+          if (seed?.reproduces && newGrowth[pos] >= seed.growthTime * 2) {
+            setPlantReproduction(prev => {
+              const newRep = { ...prev };
+              if (!newRep[pos]) {
+                newRep[pos] = true;
+                // Add new seed to inventory
+                setInventory(inv => [...inv, { name: plantType, color: seed.color }]);
+              }
+              return newRep;
+            });
+          }
+        });
+        return newGrowth;
+      });
+    }, 1000);
 
     // Cleanup
     return () => {
@@ -283,6 +425,7 @@ function MyN() {
       renderer.domElement.removeEventListener('click', onMouseClick);
       mountRef.current?.removeChild(renderer.domElement);
       scene.clear();
+      clearInterval(growthInterval);
     };
   }, [userPlot, selectedBlock, plants, plantGrowth]);
 
