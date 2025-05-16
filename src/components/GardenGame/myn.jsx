@@ -5,6 +5,7 @@ const SEEDS = [
   { name: 'Carrot Seed', price: 5, color: 0xffa500, growthTime: 10 },
   { name: 'Tomato Seed', price: 8, color: 0xff6347, growthTime: 15, reproduces: true },
   { name: 'Corn Seed', price: 10, color: 0xffe135, growthTime: 20, reproduces: true },
+  { name: 'Ant Plant Seed', price: 15, color: 0x8B4513, growthTime: 25, reproduces: true },
 ];
 
 const SHOPS = [
@@ -529,6 +530,40 @@ function MyN() {
         const cornMesh = new THREE.Mesh(corn, new THREE.MeshBasicMaterial({ color: 0xffe135 }));
         cornMesh.position.y = 2.5;
         group.add(cornMesh);
+      }
+    } else if (plantType.includes('Ant Plant')) {
+      // Ant Plant
+      const stem = new THREE.CylinderGeometry(0.1, 0.1, 2.5, 8);
+      const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x8B4513 }));
+      stemMesh.position.y = 1.25;
+      group.add(stemMesh);
+
+      // Ant plant leaves (trap-like structures)
+      const leafGeometry = new THREE.ConeGeometry(0.4, 1, 8);
+      const leafMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+      
+      // Add multiple leaves in a circular pattern
+      for (let i = 0; i < 6; i++) {
+        const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+        leaf.position.y = 1.5;
+        leaf.rotation.x = Math.PI / 3; // Angle the leaves outward
+        leaf.rotation.y = (i * Math.PI) / 3; // Space leaves evenly
+        group.add(leaf);
+      }
+
+      if (growthStage === 'mature') {
+        // Add ant-like structures when mature
+        const antGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+        const antMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        
+        // Add multiple ants
+        for (let i = 0; i < 3; i++) {
+          const ant = new THREE.Mesh(antGeometry, antMaterial);
+          ant.position.y = 2 + (i * 0.3);
+          ant.position.x = Math.sin(i * Math.PI / 2) * 0.3;
+          ant.position.z = Math.cos(i * Math.PI / 2) * 0.3;
+          group.add(ant);
+        }
       }
     }
 
