@@ -102,7 +102,7 @@ function MyN() {
 
     // Create scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+    scene.background = new THREE.Color(0x87CEEB);
     
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -112,18 +112,16 @@ function MyN() {
     directionalLight.position.set(100, 100, 100);
     directionalLight.castShadow = true;
     scene.add(directionalLight);
-    
-    // Create main green platform
+
+    // Create main platform
     const platformGeometry = new THREE.BoxGeometry(200, 10, 200);
     const platformMaterial = new THREE.MeshBasicMaterial({ color: 0x7cfc7c });
     const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-    platform.position.set(0, -5, 0);  // Position below the planting blocks
+    platform.position.set(0, -5, 0);
     scene.add(platform);
 
     // Create character
     const character = new THREE.Group();
-    
-    // Character body
     const bodyGeometry = new THREE.BoxGeometry(2, 3, 1);
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
@@ -131,7 +129,6 @@ function MyN() {
     body.castShadow = true;
     character.add(body);
 
-    // Character head
     const headGeometry = new THREE.SphereGeometry(0.8, 16, 16);
     const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
     const head = new THREE.Mesh(headGeometry, headMaterial);
@@ -143,47 +140,34 @@ function MyN() {
     scene.add(character);
     characterRef.current = character;
 
-    // Create only the four shops (as tents)
+    // Create shops
     SHOPS.forEach(({ x, z, type, label }) => {
-      // Tent base
       const baseGeometry = new THREE.BoxGeometry(15, 1, 15);
-      let tentColor = 0xff0000; // Red for sell shop
+      let tentColor = 0xff0000;
       if (type === 'eggs') tentColor = 0xffeb3b;
       if (type === 'gear') tentColor = 0x00c853;
-      if (type === 'buy') tentColor = 0x2196f3; // Blue for buy shop
+      if (type === 'buy') tentColor = 0x2196f3;
       const baseMaterial = new THREE.MeshBasicMaterial({ color: tentColor });
       const base = new THREE.Mesh(baseGeometry, baseMaterial);
       base.position.set(x, 0, z);
       scene.add(base);
-      // Tent top
+
       const tentGeometry = new THREE.ConeGeometry(10, 15, 4);
       const tentMaterial = new THREE.MeshBasicMaterial({ color: tentColor });
       const tent = new THREE.Mesh(tentGeometry, tentMaterial);
       tent.position.set(x, 8, z);
       tent.rotation.y = Math.PI / 4;
       scene.add(tent);
-      // Add a floating label above each tent (for debug/clarity)
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,256,64);
-      ctx.fillStyle = '#222'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(label, 128, 44);
-      const texture = new THREE.CanvasTexture(canvas);
-      const labelMat = new THREE.SpriteMaterial({ map: texture });
-      const labelSprite = new THREE.Sprite(labelMat);
-      labelSprite.position.set(x, 18, z);
-      labelSprite.scale.set(20, 5, 1);
-      scene.add(labelSprite);
     });
 
-    // Create 6 brown planting blocks in a grid
+    // Create planting blocks
     const plantingBlocks = [];
     const blockSize = 20;
     const spacing = 30;
     const startX = -spacing;
     const startZ = -spacing;
     blockPositions.current = [];
+    
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 2; j++) {
         const blockGeometry = new THREE.BoxGeometry(blockSize, 5, blockSize);
@@ -204,7 +188,7 @@ function MyN() {
 
     // Create camera
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 10, 15);  // Position camera behind character
+    camera.position.set(0, 10, 15);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -214,114 +198,54 @@ function MyN() {
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
-    // Movement state
-    let velocity = new THREE.Vector3(0, 0, 0);
-    const moveSpeed = 0.18;
-    const rotateSpeed = 0.03;
-    const damping = 0.85;
-    const keys = {};
-
-    function handleKeyDown(event) {
-      keys[event.key.toLowerCase()] = true;
-      if (event.key.toLowerCase() === 'i') setShowInventory(v => !v);
-      if (event.key.toLowerCase() === 'e') {
-        console.log('E pressed, current prompt:', prompt);
-        
-        // Handle shop interactions
-        if (prompt === 'buy') { 
-          closeAllShops(); 
-          setShowShop(true); 
-          console.log('Opening Buy Shop'); 
-        }
-        if (prompt === 'sell') { 
-          closeAllShops(); 
-          setShowShop(true); 
-          console.log('Opening Sell Shop'); 
-        }
-        if (prompt === 'eggs') { 
-          closeAllShops(); 
-          setShowEggs(true); 
-          console.log('Opening Eggs Shop'); 
-        }
-        if (prompt === 'gear') { 
-          closeAllShops(); 
-          setShowGear(true); 
-          console.log('Opening Gear Shop'); 
-        }
-        if (prompt === 'inventory') setShowInventory(v => !v);
-        if (prompt === 'bank') setShowBank(v => !v);
-
-        // Handle planting and tool usage
-        if (prompt && prompt.startsWith('plantblock:')) {
-          const selectedItem = inventory[0];
-          if (!selectedItem) return;
-
-          if (selectedItem.name.includes('Seed')) {
-            // Plant seed
-            setPlantingSeed(selectedItem.name);
-            console.log('Planting:', selectedItem.name);
-          } else if (selectedItem.name === 'Watering Can') {
-            // Water the plant
-            const blockPos = prompt.split(':')[1];
-            if (plants[blockPos]) {
-              console.log('Watering plant at:', blockPos);
-              // Add watering effect or growth boost here
-            }
-          } else if (selectedItem.name === 'Shovel' || selectedItem.name === 'Golden Shovel') {
-            // Remove plant
-            const blockPos = prompt.split(':')[1];
-            if (plants[blockPos]) {
-              console.log('Removing plant at:', blockPos);
-              setPlants(pl => {
-                const newPl = {...pl};
-                delete newPl[blockPos];
-                return newPl;
-              });
-            }
-          }
-        }
-      }
-    }
-    function handleKeyUp(event) {
-      keys[event.key.toLowerCase()] = false;
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    // Raycaster for clicking
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    function onMouseClick(event) {
-      // Calculate mouse position in normalized device coordinates
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      // Update the picking ray with the camera and mouse position
-      raycaster.setFromCamera(mouse, camera);
-
-      // Calculate objects intersecting the picking ray
-      const intersects = raycaster.intersectObjects(plantingBlocks);
-
-      if (intersects.length > 0) {
-        const block = intersects[0].object;
-        setSelectedBlock(block.userData.position);
-        
-        // Highlight selected block
-        plantingBlocks.forEach(b => {
-          b.material.color.setHex(0x8B4513); // Reset all blocks to brown
-        });
-        block.material.color.setHex(0xA0522D); // Highlight selected block
-      }
-    }
-
-    renderer.domElement.addEventListener('click', onMouseClick);
+    // Add plants to scene
+    const plantMeshes = new Map();
+    Object.entries(plants).forEach(([pos, seed]) => {
+      const [x, z] = pos.split(',').map(Number);
+      const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
+      const plantMesh = createPlantMesh(seed, growthStage);
+      plantMesh.position.set(x, 0, z);
+      scene.add(plantMesh);
+      plantMeshes.set(pos, plantMesh);
+    });
 
     // Animation
     function animate() {
       requestAnimationFrame(animate);
-      // Smooth movement
+      
+      // Update plant meshes
+      Object.entries(plants).forEach(([pos, seed]) => {
+        if (!plantMeshes.has(pos)) {
+          const [x, z] = pos.split(',').map(Number);
+          const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
+          const plantMesh = createPlantMesh(seed, growthStage);
+          plantMesh.position.set(x, 0, z);
+          scene.add(plantMesh);
+          plantMeshes.set(pos, plantMesh);
+        }
+      });
+
+      // Remove old plant meshes
+      plantMeshes.forEach((mesh, pos) => {
+        if (!plants[pos]) {
+          scene.remove(mesh);
+          plantMeshes.delete(pos);
+        }
+      });
+
+      // Update existing plant meshes
+      plantMeshes.forEach((mesh, pos) => {
+        const seed = plants[pos];
+        const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
+        scene.remove(mesh);
+        const newMesh = createPlantMesh(seed, growthStage);
+        const [x, z] = pos.split(',').map(Number);
+        newMesh.position.set(x, 0, z);
+        scene.add(newMesh);
+        plantMeshes.set(pos, newMesh);
+      });
+
+      // Movement and camera updates
       let moveVec = new THREE.Vector3(0, 0, 0);
       if (keys['w']) {
         moveVec.x -= Math.sin(characterRef.current.rotation.y) * moveSpeed;
@@ -340,85 +264,16 @@ function MyN() {
       velocity.add(moveVec);
       velocity.multiplyScalar(damping);
       characterRef.current.position.add(velocity);
+
       // Camera follow
       const cameraOffset = new THREE.Vector3(0, 10, 15);
       cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), characterRef.current.rotation.y);
       cameraRef.current.position.copy(characterRef.current.position).add(cameraOffset);
       cameraRef.current.lookAt(characterRef.current.position);
-      // Prompt logic (shops and plots)
-      let foundShop = false;
-      for (const shop of SHOPS) {
-        const dist = Math.sqrt(
-          Math.pow(characterRef.current.position.x - shop.x, 2) + Math.pow(characterRef.current.position.z - shop.z, 2)
-        );
-        if (dist < 15) {
-          console.log('Near shop:', shop.type, 'distance:', dist);
-          setPrompt(shop.type);
-          foundShop = true;
-          break;
-        }
-      }
-      if (!foundShop) {
-        // Only show prompt for user's plot
-        if (selectedBlock && userPlot && selectedBlock === `${userPlot.x},${userPlot.z}`) {
-          const [bx, bz] = selectedBlock.split(',').map(Number);
-          const distToBlock = Math.sqrt(
-            Math.pow(characterRef.current.position.x - bx, 2) + Math.pow(characterRef.current.position.z - bz, 2)
-          );
-          if (distToBlock < 15) {
-            setPrompt('plantblock:' + selectedBlock);
-          } else {
-            setPrompt('');
-            closeAllShops();
-          }
-        } else {
-          setPrompt('');
-          closeAllShops();
-        }
-      }
+
       renderer.render(scene, cameraRef.current);
     }
     animate();
-
-    // Handle window resize
-    const handleResize = () => {
-      const width = mountRef.current.clientWidth;
-      const height = mountRef.current.clientHeight;
-      
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      
-      renderer.setSize(width, height);
-    };
-    window.addEventListener('resize', handleResize);
-
-    // Add plant growth timer
-    const growthInterval = setInterval(() => {
-      setPlantGrowth(prev => {
-        const newGrowth = { ...prev };
-        Object.entries(plants).forEach(([pos, plantType]) => {
-          if (!newGrowth[pos]) {
-            newGrowth[pos] = 0;
-          }
-          newGrowth[pos] += 1;
-          
-          // Check for reproduction
-          const seed = SEEDS.find(s => s.name === plantType);
-          if (seed?.reproduces && newGrowth[pos] >= seed.growthTime * 2) {
-            setPlantReproduction(prev => {
-              const newRep = { ...prev };
-              if (!newRep[pos]) {
-                newRep[pos] = true;
-                // Add new seed to inventory
-                setInventory(inv => [...inv, { name: plantType, color: seed.color }]);
-              }
-              return newRep;
-            });
-          }
-        });
-        return newGrowth;
-      });
-    }, 1000);
 
     // Cleanup
     return () => {
@@ -428,9 +283,8 @@ function MyN() {
       renderer.domElement.removeEventListener('click', onMouseClick);
       mountRef.current?.removeChild(renderer.domElement);
       scene.clear();
-      clearInterval(growthInterval);
     };
-  }, [userPlot, selectedBlock]);
+  }, [userPlot, selectedBlock, plants, plantGrowth]);
 
   // Shop buy handler
   function handleBuy(seed) {
@@ -909,16 +763,6 @@ function MyN() {
           )}
         </button>
       )}
-      {/* Planted plants on blocks */}
-      {Object.entries(plants).map(([pos, seed]) => {
-        const [x, z] = pos.split(',').map(Number);
-        const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
-        const plantMesh = createPlantMesh(seed, growthStage);
-        plantMesh.position.set(x, 0, z);
-        scene.add(plantMesh);
-        
-        return null; // We're handling the 3D rendering in the scene
-      })}
     </div>
   );
 }
