@@ -409,16 +409,19 @@ function MyN() {
   // Planting handler
   useEffect(() => {
     if (plantingSeed && selectedBlock) {
-      setPlants(pl => ({ ...pl, [selectedBlock]: plantingSeed }));
-      setInventory(inv => {
-        const idx = inv.findIndex(i => i.name === plantingSeed);
-        if (idx !== -1) {
-          const newInv = [...inv];
-          newInv.splice(idx, 1);
-          return newInv;
-        }
-        return inv;
-      });
+      // Check if the block is empty
+      if (!plants[selectedBlock]) {
+        setPlants(pl => ({ ...pl, [selectedBlock]: plantingSeed }));
+        setInventory(inv => {
+          const idx = inv.findIndex(i => i.name === plantingSeed);
+          if (idx !== -1) {
+            const newInv = [...inv];
+            newInv.splice(idx, 1);
+            return newInv;
+          }
+          return inv;
+        });
+      }
       setPlantingSeed(null);
     }
   }, [plantingSeed, selectedBlock]);
@@ -729,8 +732,14 @@ function MyN() {
             if (!selectedItem) return;
 
             if (selectedItem.name.includes('Seed')) {
-              setPlantingSeed(selectedItem.name);
-              console.log('Planting:', selectedItem.name);
+              // Only plant if the block is empty
+              const blockPos = prompt.split(':')[1];
+              if (!plants[blockPos]) {
+                setPlantingSeed(selectedItem.name);
+                console.log('Planting:', selectedItem.name);
+              } else {
+                console.log('Block already has a plant');
+              }
             } else if (selectedItem.name === 'Watering Can') {
               const blockPos = prompt.split(':')[1];
               if (plants[blockPos]) {
