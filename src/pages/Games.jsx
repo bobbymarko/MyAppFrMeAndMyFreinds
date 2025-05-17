@@ -1,48 +1,28 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './Games.css';
 
 const Games = () => {
-  const navigate = useNavigate();
-
-  const buttonStyle = {
-    padding: '1.5rem 2rem',
-    fontSize: '1.3rem',
-    margin: '1rem',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    width: '300px',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-  };
-
   return (
-    <div className="games-container">
-      <h1>Admin Games</h1>
+    <div className="games-page">
+      <h1>Games</h1>
       <div className="games-grid">
-        <button
-          onClick={() => navigate('/target-game')}
-          style={{
-            ...buttonStyle,
-            backgroundColor: '#28a745',
-            boxShadow: '0 4px 6px rgba(40, 167, 69, 0.2)'
-          }}
-        >
-          Target Game
-        </button>
-        <button
-          onClick={() => navigate('/godot-game')}
-          style={{
-            ...buttonStyle,
-            backgroundColor: '#ff6b6b',
-            boxShadow: '0 4px 6px rgba(255, 107, 107, 0.2)'
-          }}
-        >
-          Godot Game
-        </button>
+        <Link to="/target-game" className="game-card">
+          <h2>Target Game</h2>
+          <p>Test your aim and precision</p>
+        </Link>
+        <Link to="/godot-game" className="game-card">
+          <h2>Godot Game</h2>
+          <p>Explore the Godot engine</p>
+        </Link>
+        <Link to="/garden-game" className="game-card">
+          <h2>Garden Game</h2>
+          <p>Grow and harvest plants in 3D</p>
+        </Link>
+        <Link to="/cube-game" className="game-card">
+          <h2>Cube Game</h2>
+          <p>Interactive 3D cube experience</p>
+        </Link>
       </div>
     </div>
   );

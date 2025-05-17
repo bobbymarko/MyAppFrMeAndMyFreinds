@@ -83,6 +83,17 @@ function AdminDashboard() {
         >
           Games
         </button>
+        <button
+          onClick={() => navigate('/videos')}
+          style={{
+            ...buttonStyle,
+            backgroundColor: '#ffc107',  // Yellow color for the videos button
+            color: '#333',
+            boxShadow: '0 4px 6px rgba(255, 193, 7, 0.2)'
+          }}
+        >
+          Videos
+        </button>
       </div>
     </div>
   );

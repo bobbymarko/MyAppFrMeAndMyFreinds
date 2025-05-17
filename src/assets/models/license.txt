@@ -1,0 +1,11 @@
+Model Information:
+* title:	Modeling Tanaman Tomat
+* source:	https://sketchfab.com/3d-models/modeling-tanaman-tomat-9a9717d23a274b918cd9f09fcfa08309
+* author:	zyulfikar (https://sketchfab.com/zyulfikar)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Modeling Tanaman Tomat" (https://sketchfab.com/3d-models/modeling-tanaman-tomat-9a9717d23a274b918cd9f09fcfa08309) by zyulfikar (https://sketchfab.com/zyulfikar) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

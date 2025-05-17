@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three-stdlib';
 
 const SEEDS = [
   { name: 'Carrot Seed', price: 5, color: 0xffa500, growthTime: 10 },
@@ -28,6 +29,9 @@ const BONUS = [
   { name: 'Diamond Watering Can', price: 75, color: 0x4fc3f7 },
 ];
 
+const textureLoader = new THREE.TextureLoader();
+textureLoader.crossOrigin = 'anonymous';
+
 function getUserId() {
   // Use localStorage userId or random fallback
   let userId = localStorage.getItem('userId');
@@ -42,7 +46,10 @@ function MyN() {
   const mountRef = useRef(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [plants, setPlants] = useState({});
-  const [inventory, setInventory] = useState([]);
+  const [inventory, setInventory] = useState([
+    { name: 'Carrot Seed', color: 0xffa500 },
+    { name: 'Tomato Seed', color: 0xff6347 }
+  ]);
   const [showInventory, setShowInventory] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showEggs, setShowEggs] = useState(false);
@@ -56,46 +63,50 @@ function MyN() {
   const cameraRef = useRef(null);
   const plantingBlocksRef = useRef([]);
   const blockPositions = useRef([]);
-  const [userPlot, setUserPlot] = useState(null);
-  const userId = getUserId();
   const [selectedInventoryIndex, setSelectedInventoryIndex] = useState(0);
+  const positionRef = useRef({ x: 0, y: 0, z: 0 });
+  const rotationRef = useRef(0);
+
+  // Add movement state variables
+  const keys = useRef({});
+  const velocity = useRef(new THREE.Vector3(0, 0, 0));
+  const moveSpeed = 0.18;
+  const rotateSpeed = 0.03;
+  const damping = 0.85;
+  const isMoving = useRef(false);
+  const isRotating = useRef(false);
+  const rotationVelocity = useRef(0);
+  const rotationDamping = 0.9;
 
   // Add plant growth states
   const [plantGrowth, setPlantGrowth] = useState({});
   const [plantReproduction, setPlantReproduction] = useState({});
 
-  // Place this here, NOT inside useEffect!
-  function closeAllShops() {
-    setShowShop(false);
-    setShowEggs(false);
-    setShowGear(false);
-    setShowBonus(false);
-  }
+  const tomatoModelUrl = '/models/scene.gltf';
+  const carrotModelUrl = '/models/crrot/carrot.zip';
+  const tomatoModelRef = useRef();
+  const carrotModelRef = useRef();
+  const sceneRef = useRef(null);
+  const rendererRef = useRef(null);
+  const loadersRef = useRef([]);
 
-  useEffect(() => {
-    // Assign a unique plot to this user (local demo)
-    const allPlots = [];
-    const blockSize = 20;
-    const spacing = 30;
-    const startX = -spacing;
-    const startZ = -spacing;
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 2; j++) {
-        allPlots.push({ x: startX + (i * spacing), z: startZ + (j * spacing) });
-      }
-    }
-    let plotMap = JSON.parse(localStorage.getItem('plotMap') || '{}');
-    if (!plotMap[userId]) {
-      // Assign first available plot
-      const taken = Object.values(plotMap);
-      const available = allPlots.find(p => !taken.some(t => t.x === p.x && t.z === p.z));
-      if (available) {
-        plotMap[userId] = available;
-        localStorage.setItem('plotMap', JSON.stringify(plotMap));
-      }
-    }
-    setUserPlot(plotMap[userId]);
-  }, [userId]);
+  // Create a loading manager with better error handling
+  const loadingManager = new THREE.LoadingManager();
+  loadingManager.onError = (url) => {
+    console.warn('Error loading:', url);
+    return null;
+  };
+
+  // Add this function to handle texture loading
+  function createFallbackTexture(color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 2;
+    const context = canvas.getContext('2d');
+    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    context.fillRect(0, 0, 2, 2);
+    return new THREE.CanvasTexture(canvas);
+  }
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -103,6 +114,7 @@ function MyN() {
     // Create scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
+    sceneRef.current = scene;
     
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -113,17 +125,55 @@ function MyN() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 
-    // Movement state
-    let velocity = new THREE.Vector3(0, 0, 0);
-    const moveSpeed = 0.18;
-    const rotateSpeed = 0.03;
-    const damping = 0.85;
-    const keys = {};
+    // Create character
+    const character = new THREE.Group();
+    const bodyGeometry = new THREE.BoxGeometry(2, 3, 1);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 1.5;
+    body.castShadow = true;
+    character.add(body);
+
+    const headGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+    const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 3.5;
+    head.castShadow = true;
+    character.add(head);
+
+    // Set initial position from ref
+    character.position.set(positionRef.current.x, positionRef.current.y, positionRef.current.z);
+    character.rotation.y = rotationRef.current;
+    scene.add(character);
+    characterRef.current = character;
+
+    // Create camera
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 10, 15);
+    camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
+
+    // Create renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    mountRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    // Movement bounds
+    const bounds = {
+      minX: -100,
+      maxX: 100,
+      minZ: -100,
+      maxZ: 100
+    };
 
     function handleKeyDown(event) {
-      keys[event.key.toLowerCase()] = true;
-      if (event.key.toLowerCase() === 'i') setShowInventory(v => !v);
-      if (event.key.toLowerCase() === 'e') {
+      const key = event.key.toLowerCase();
+      keys.current[key] = true;
+      
+      if (key === 'i') setShowInventory(v => !v);
+      if (key === 'e') {
         console.log('E pressed, current prompt:', prompt);
         
         // Handle shop interactions
@@ -153,7 +203,19 @@ function MyN() {
     }
 
     function handleKeyUp(event) {
-      keys[event.key.toLowerCase()] = false;
+      const key = event.key.toLowerCase();
+      keys.current[key] = false;
+      
+      // Reset velocity when movement keys are released
+      if (key === 'w' || key === 's') {
+        velocity.current.x = 0;
+        velocity.current.z = 0;
+        isMoving.current = false;
+      }
+      if (key === 'a' || key === 'd') {
+        isRotating.current = false;
+        rotationVelocity.current = 0;
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown);
@@ -165,26 +227,6 @@ function MyN() {
     const platform = new THREE.Mesh(platformGeometry, platformMaterial);
     platform.position.set(0, -5, 0);
     scene.add(platform);
-
-    // Create character
-    const character = new THREE.Group();
-    const bodyGeometry = new THREE.BoxGeometry(2, 3, 1);
-    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 1.5;
-    body.castShadow = true;
-    character.add(body);
-
-    const headGeometry = new THREE.SphereGeometry(0.8, 16, 16);
-    const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 3.5;
-    head.castShadow = true;
-    character.add(head);
-
-    character.position.set(0, 0, 0);
-    scene.add(character);
-    characterRef.current = character;
 
     // Create shops
     SHOPS.forEach(({ x, z, type, label }) => {
@@ -224,7 +266,7 @@ function MyN() {
           z: startZ + (j * spacing)
         };
         block.position.set(position.x, 0, position.z);
-        block.userData = { position: `${position.x},${position.z}` };
+        block.userData = { position: `${position.x},${position.z}`, isPlot: true };
         scene.add(block);
         plantingBlocks.push(block);
         blockPositions.current.push({ x: position.x, z: position.z });
@@ -232,148 +274,260 @@ function MyN() {
     }
     plantingBlocksRef.current = plantingBlocks;
 
-    // Create camera
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 10, 15);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    // Create renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    mountRef.current.appendChild(renderer.domElement);
-
-    // Add plants to scene
-    const plantMeshes = new Map();
-    Object.entries(plants).forEach(([pos, seed]) => {
-      const [x, z] = pos.split(',').map(Number);
-      const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
-      const plantMesh = createPlantMesh(seed, growthStage);
-      plantMesh.position.set(x, 0, z);
-      scene.add(plantMesh);
-      plantMeshes.set(pos, plantMesh);
-    });
-
     // Raycaster for clicking
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    function onMouseClick(event) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const onMouseClick = (event) => {
+      if (!mountRef.current) return;
 
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(plantingBlocks);
+      const rect = mountRef.current.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2(x, y);
+      raycaster.setFromCamera(mouse, cameraRef.current);
+
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      
       if (intersects.length > 0) {
-        const block = intersects[0].object;
-        setSelectedBlock(block.userData.position);
+        const clickedObject = intersects[0].object;
         
-        plantingBlocks.forEach(b => {
-          b.material.color.setHex(0x8B4513);
-        });
-        block.material.color.setHex(0xA0522D);
+        // Check if we clicked on a plot
+        if (clickedObject.userData.isPlot) {
+          const plotPosition = clickedObject.position;
+          
+          // Load tomato model if not already loaded
+          if (!tomatoModelRef.current) {
+            console.log('Attempting to load tomato model from:', tomatoModelUrl);
+            const loader = new GLTFLoader(loadingManager);
+            loadersRef.current.push(loader);
+            
+            // Create fallback materials with textures
+            const fallbackMaterials = {
+              batang: new THREE.MeshStandardMaterial({ 
+                color: 0x4CAF50,  // Green for stem
+                roughness: 0.7,
+                metalness: 0.2,
+                normalScale: new THREE.Vector2(0, 0)
+              }),
+              daun: new THREE.MeshStandardMaterial({ 
+                color: 0x81C784,  // Light green for leaves
+                roughness: 0.6,
+                metalness: 0.1,
+                normalScale: new THREE.Vector2(0, 0)
+              }),
+              kembang: new THREE.MeshStandardMaterial({ 
+                color: 0xFFEB3B,  // Yellow for flowers
+                roughness: 0.5,
+                metalness: 0.1,
+                normalScale: new THREE.Vector2(0, 0)
+              }),
+              buah: new THREE.MeshStandardMaterial({ 
+                color: 0xF44336,  // Red for tomatoes
+                roughness: 0.4,
+                metalness: 0.2,
+                normalScale: new THREE.Vector2(0, 0)
+              }),
+              akar: new THREE.MeshStandardMaterial({ 
+                color: 0x795548,  // Brown for roots
+                roughness: 0.8,
+                metalness: 0.1,
+                normalScale: new THREE.Vector2(0, 0)
+              }),
+              tanah: new THREE.MeshStandardMaterial({ 
+                color: 0x8D6E63,  // Dark brown for soil
+                roughness: 0.9,
+                metalness: 0.0,
+                normalScale: new THREE.Vector2(0, 0)
+              })
+            };
+            
+            // Pre-process the model before loading
+            loader.setResourcePath('/models/');
+            loader.setCrossOrigin('anonymous');
+            
+            loader.load(
+              tomatoModelUrl,
+              (gltf) => {
+                console.log('Tomato model loaded successfully');
+                const model = gltf.scene;
+                
+                // Handle materials before traversing
+                model.traverse((child) => {
+                  if (child.isMesh && child.material) {
+                    // Store original material properties
+                    const originalColor = child.material.color;
+                    const originalRoughness = child.material.roughness;
+                    const originalMetalness = child.material.metalness;
+                    
+                    // Determine which part of the plant this mesh represents
+                    const meshName = child.name.toLowerCase();
+                    let fallbackMaterial = null;
+                    
+                    if (meshName.includes('batang')) {
+                      fallbackMaterial = fallbackMaterials.batang.clone();
+                    } else if (meshName.includes('daun')) {
+                      fallbackMaterial = fallbackMaterials.daun.clone();
+                    } else if (meshName.includes('kembang')) {
+                      fallbackMaterial = fallbackMaterials.kembang.clone();
+                    } else if (meshName.includes('buah')) {
+                      fallbackMaterial = fallbackMaterials.buah.clone();
+                    } else if (meshName.includes('akar')) {
+                      fallbackMaterial = fallbackMaterials.akar.clone();
+                    } else if (meshName.includes('tanah')) {
+                      fallbackMaterial = fallbackMaterials.tanah.clone();
+                    }
+                    
+                    // If we found a matching fallback material, use it
+                    if (fallbackMaterial) {
+                      // Preserve original material properties if they exist
+                      if (originalColor) fallbackMaterial.color.copy(originalColor);
+                      if (originalRoughness !== undefined) fallbackMaterial.roughness = originalRoughness;
+                      if (originalMetalness !== undefined) fallbackMaterial.metalness = originalMetalness;
+                      
+                      // Explicitly disable normal mapping
+                      fallbackMaterial.normalScale.set(0, 0);
+                      fallbackMaterial.normalMap = null;
+                      fallbackMaterial.normalMapType = null;
+                      
+                      // Ensure the material is properly configured
+                      fallbackMaterial.needsUpdate = true;
+                      
+                      child.material = fallbackMaterial;
+                    } else {
+                      // Default fallback for any other parts
+                      const defaultMaterial = new THREE.MeshStandardMaterial({
+                        color: originalColor || 0x808080,
+                        roughness: originalRoughness || 0.7,
+                        metalness: originalMetalness || 0.2,
+                        normalScale: new THREE.Vector2(0, 0),
+                        normalMap: null,
+                        normalMapType: null
+                      });
+                      
+                      defaultMaterial.needsUpdate = true;
+                      child.material = defaultMaterial;
+                    }
+
+                    // Ensure shadows are enabled
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                  }
+                });
+                
+                tomatoModelRef.current = model;
+              },
+              (xhr) => {
+                console.log('Loading progress:', (xhr.loaded / xhr.total * 100) + '% loaded');
+              },
+              (error) => {
+                console.error('Error loading model:', error);
+                // Create a simple fallback model if loading fails
+                const fallbackModel = new THREE.Group();
+                
+                // Create a simple stem
+                const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+                const stemMaterial = new THREE.MeshStandardMaterial({ 
+                  color: 0x4CAF50,
+                  roughness: 0.7,
+                  metalness: 0.2,
+                  normalScale: new THREE.Vector2(0, 0),
+                  normalMap: null,
+                  normalMapType: null
+                });
+                const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+                stem.position.y = 1;
+                stem.castShadow = true;
+                fallbackModel.add(stem);
+                
+                // Create simple leaves
+                const leafGeometry = new THREE.ConeGeometry(0.3, 1, 8);
+                const leafMaterial = new THREE.MeshStandardMaterial({ 
+                  color: 0x81C784,
+                  roughness: 0.6,
+                  metalness: 0.1,
+                  normalScale: new THREE.Vector2(0, 0),
+                  normalMap: null,
+                  normalMapType: null
+                });
+                const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+                leaf.position.y = 1.5;
+                leaf.castShadow = true;
+                fallbackModel.add(leaf);
+                
+                // Create simple tomato
+                const tomatoGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+                const tomatoMaterial = new THREE.MeshStandardMaterial({ 
+                  color: 0xF44336,
+                  roughness: 0.4,
+                  metalness: 0.2,
+                  normalScale: new THREE.Vector2(0, 0),
+                  normalMap: null,
+                  normalMapType: null
+                });
+                const tomato = new THREE.Mesh(tomatoGeometry, tomatoMaterial);
+                tomato.position.y = 2;
+                tomato.castShadow = true;
+                fallbackModel.add(tomato);
+                
+                tomatoModelRef.current = fallbackModel;
+              }
+            );
+          } else {
+            // Move existing tomato model to new plot
+            tomatoModelRef.current.position.copy(plotPosition);
+            tomatoModelRef.current.position.y += 2.5; // Increased height
+          }
+        }
       }
-    }
+    };
 
     renderer.domElement.addEventListener('click', onMouseClick);
 
     // Animation
     function animate() {
-      requestAnimationFrame(animate);
-      
-      // Update plant meshes
-      Object.entries(plants).forEach(([pos, seed]) => {
-        if (!plantMeshes.has(pos)) {
-          const [x, z] = pos.split(',').map(Number);
-          const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
-          const plantMesh = createPlantMesh(seed, growthStage);
-          plantMesh.position.set(x, 0, z);
-          scene.add(plantMesh);
-          plantMeshes.set(pos, plantMesh);
-        }
-      });
+      if (!characterRef.current || !cameraRef.current) return;
 
-      // Remove old plant meshes
-      plantMeshes.forEach((mesh, pos) => {
-        if (!plants[pos]) {
-          scene.remove(mesh);
-          plantMeshes.delete(pos);
-        }
-      });
+      // Movement
+      if (keys.current['w']) {
+        velocity.current.z = -moveSpeed;
+        isMoving.current = true;
+      }
+      if (keys.current['s']) {
+        velocity.current.z = moveSpeed;
+        isMoving.current = true;
+      }
+      if (keys.current['a']) {
+        rotationVelocity.current = rotateSpeed;
+        isRotating.current = true;
+      }
+      if (keys.current['d']) {
+        rotationVelocity.current = -rotateSpeed;
+        isRotating.current = true;
+      }
 
-      // Update existing plant meshes
-      plantMeshes.forEach((mesh, pos) => {
-        const seed = plants[pos];
-        const growthStage = plantGrowth[pos] >= SEEDS.find(s => s.name === seed)?.growthTime ? 'mature' : 'growing';
-        scene.remove(mesh);
-        const newMesh = createPlantMesh(seed, growthStage);
-        const [x, z] = pos.split(',').map(Number);
-        newMesh.position.set(x, 0, z);
-        scene.add(newMesh);
-        plantMeshes.set(pos, newMesh);
-      });
+      // Apply movement
+      if (isMoving.current) {
+        characterRef.current.position.x += velocity.current.x;
+        characterRef.current.position.z += velocity.current.z;
+        velocity.current.multiplyScalar(damping);
+      }
 
-      // Movement and camera updates
-      let moveVec = new THREE.Vector3(0, 0, 0);
-      if (keys['w']) {
-        moveVec.x -= Math.sin(characterRef.current.rotation.y) * moveSpeed;
-        moveVec.z -= Math.cos(characterRef.current.rotation.y) * moveSpeed;
+      // Apply rotation
+      if (isRotating.current) {
+        characterRef.current.rotation.y += rotationVelocity.current;
+        rotationVelocity.current *= rotationDamping;
       }
-      if (keys['s']) {
-        moveVec.x += Math.sin(characterRef.current.rotation.y) * moveSpeed;
-        moveVec.z += Math.cos(characterRef.current.rotation.y) * moveSpeed;
-      }
-      if (keys['a']) {
-        characterRef.current.rotation.y += rotateSpeed;
-      }
-      if (keys['d']) {
-        characterRef.current.rotation.y -= rotateSpeed;
-      }
-      velocity.add(moveVec);
-      velocity.multiplyScalar(damping);
-      characterRef.current.position.add(velocity);
 
-      // Camera follow
-      const cameraOffset = new THREE.Vector3(0, 10, 15);
+      // Update camera position
+      const cameraOffset = new THREE.Vector3(0, 5, 10);
       cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), characterRef.current.rotation.y);
       cameraRef.current.position.copy(characterRef.current.position).add(cameraOffset);
       cameraRef.current.lookAt(characterRef.current.position);
 
-      // Prompt logic (shops and plots)
-      let foundShop = false;
-      for (const shop of SHOPS) {
-        const dist = Math.sqrt(
-          Math.pow(characterRef.current.position.x - shop.x, 2) + Math.pow(characterRef.current.position.z - shop.z, 2)
-        );
-        if (dist < 15) {
-          console.log('Near shop:', shop.type, 'distance:', dist);
-          setPrompt(shop.type);
-          foundShop = true;
-          break;
-        }
-      }
-      if (!foundShop) {
-        if (selectedBlock && userPlot && selectedBlock === `${userPlot.x},${userPlot.z}`) {
-          const [bx, bz] = selectedBlock.split(',').map(Number);
-          const distToBlock = Math.sqrt(
-            Math.pow(characterRef.current.position.x - bx, 2) + Math.pow(characterRef.current.position.z - bz, 2)
-          );
-          if (distToBlock < 15) {
-            setPrompt('plantblock:' + selectedBlock);
-          } else {
-            setPrompt('');
-            closeAllShops();
-          }
-        } else {
-          setPrompt('');
-          closeAllShops();
-        }
-      }
-
-      renderer.render(scene, cameraRef.current);
+      requestAnimationFrame(animate);
     }
     animate();
 
@@ -417,17 +571,260 @@ function MyN() {
       });
     }, 1000);
 
-    // Cleanup
+    // Cleanup function
     return () => {
+      // Remove event listeners
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       renderer.domElement.removeEventListener('click', onMouseClick);
-      mountRef.current?.removeChild(renderer.domElement);
+      
+      // Dispose of all geometries and materials
+      scene.traverse((object) => {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(material => material.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+
+      // Dispose of renderer
+      renderer.dispose();
+      
+      // Remove the canvas
+      if (mountRef.current) {
+        mountRef.current.removeChild(renderer.domElement);
+      }
+
+      // Clear the scene
       scene.clear();
+      
+      // Clear intervals
       clearInterval(growthInterval);
+
+      // Clear model refs
+      tomatoModelRef.current = null;
+      carrotModelRef.current = null;
+
+      // Cleanup loaders
+      loadersRef.current = [];
     };
-  }, [userPlot, selectedBlock, plants, plantGrowth]);
+  }, []); // Empty dependency array to ensure effect only runs once
+
+  // Separate effect for model loading
+  useEffect(() => {
+    if (!sceneRef.current) return;
+
+    // Load the models once
+    if (!tomatoModelRef.current) {
+      console.log('Attempting to load tomato model from:', tomatoModelUrl);
+      const loader = new GLTFLoader(loadingManager);
+      loadersRef.current.push(loader);
+      
+      // Create fallback materials with textures
+      const fallbackMaterials = {
+        batang: new THREE.MeshStandardMaterial({ 
+          color: 0x4CAF50,  // Green for stem
+          roughness: 0.7,
+          metalness: 0.2,
+          normalScale: new THREE.Vector2(0, 0)
+        }),
+        daun: new THREE.MeshStandardMaterial({ 
+          color: 0x81C784,  // Light green for leaves
+          roughness: 0.6,
+          metalness: 0.1,
+          normalScale: new THREE.Vector2(0, 0)
+        }),
+        kembang: new THREE.MeshStandardMaterial({ 
+          color: 0xFFEB3B,  // Yellow for flowers
+          roughness: 0.5,
+          metalness: 0.1,
+          normalScale: new THREE.Vector2(0, 0)
+        }),
+        buah: new THREE.MeshStandardMaterial({ 
+          color: 0xF44336,  // Red for tomatoes
+          roughness: 0.4,
+          metalness: 0.2,
+          normalScale: new THREE.Vector2(0, 0)
+        }),
+        akar: new THREE.MeshStandardMaterial({ 
+          color: 0x795548,  // Brown for roots
+          roughness: 0.8,
+          metalness: 0.1,
+          normalScale: new THREE.Vector2(0, 0)
+        }),
+        tanah: new THREE.MeshStandardMaterial({ 
+          color: 0x8D6E63,  // Dark brown for soil
+          roughness: 0.9,
+          metalness: 0.0,
+          normalScale: new THREE.Vector2(0, 0)
+        })
+      };
+
+      // Pre-process the model before loading
+      loader.setResourcePath('/models/');
+      loader.setCrossOrigin('anonymous');
+      
+      loader.load(
+        tomatoModelUrl,
+        (gltf) => {
+          console.log('Tomato model loaded successfully');
+          const model = gltf.scene;
+          
+          // Handle materials before traversing
+          model.traverse((child) => {
+            if (child.isMesh && child.material) {
+              // Store original material properties
+              const originalColor = child.material.color;
+              const originalRoughness = child.material.roughness;
+              const originalMetalness = child.material.metalness;
+              
+              // Determine which part of the plant this mesh represents
+              const meshName = child.name.toLowerCase();
+              let fallbackMaterial = null;
+              
+              if (meshName.includes('batang')) {
+                fallbackMaterial = fallbackMaterials.batang.clone();
+              } else if (meshName.includes('daun')) {
+                fallbackMaterial = fallbackMaterials.daun.clone();
+              } else if (meshName.includes('kembang')) {
+                fallbackMaterial = fallbackMaterials.kembang.clone();
+              } else if (meshName.includes('buah')) {
+                fallbackMaterial = fallbackMaterials.buah.clone();
+              } else if (meshName.includes('akar')) {
+                fallbackMaterial = fallbackMaterials.akar.clone();
+              } else if (meshName.includes('tanah')) {
+                fallbackMaterial = fallbackMaterials.tanah.clone();
+              }
+              
+              // If we found a matching fallback material, use it
+              if (fallbackMaterial) {
+                // Preserve original material properties if they exist
+                if (originalColor) fallbackMaterial.color.copy(originalColor);
+                if (originalRoughness !== undefined) fallbackMaterial.roughness = originalRoughness;
+                if (originalMetalness !== undefined) fallbackMaterial.metalness = originalMetalness;
+                
+                // Explicitly disable normal mapping
+                fallbackMaterial.normalScale.set(0, 0);
+                fallbackMaterial.normalMap = null;
+                fallbackMaterial.normalMapType = null;
+                
+                // Ensure the material is properly configured
+                fallbackMaterial.needsUpdate = true;
+                
+                child.material = fallbackMaterial;
+              } else {
+                // Default fallback for any other parts
+                const defaultMaterial = new THREE.MeshStandardMaterial({
+                  color: originalColor || 0x808080,
+                  roughness: originalRoughness || 0.7,
+                  metalness: originalMetalness || 0.2,
+                  normalScale: new THREE.Vector2(0, 0),
+                  normalMap: null,
+                  normalMapType: null
+                });
+                
+                defaultMaterial.needsUpdate = true;
+                child.material = defaultMaterial;
+              }
+
+              // Ensure shadows are enabled
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          
+          tomatoModelRef.current = model;
+        },
+        (xhr) => {
+          console.log('Loading progress:', (xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        (error) => {
+          console.error('Error loading model:', error);
+          // Create a simple fallback model if loading fails
+          const fallbackModel = new THREE.Group();
+          
+          // Create a simple stem
+          const stemGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+          const stemMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x4CAF50,
+            roughness: 0.7,
+            metalness: 0.2,
+            normalScale: new THREE.Vector2(0, 0),
+            normalMap: null,
+            normalMapType: null
+          });
+          const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+          stem.position.y = 1;
+          stem.castShadow = true;
+          fallbackModel.add(stem);
+          
+          // Create simple leaves
+          const leafGeometry = new THREE.ConeGeometry(0.3, 1, 8);
+          const leafMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x81C784,
+            roughness: 0.6,
+            metalness: 0.1,
+            normalScale: new THREE.Vector2(0, 0),
+            normalMap: null,
+            normalMapType: null
+          });
+          const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+          leaf.position.y = 1.5;
+          leaf.castShadow = true;
+          fallbackModel.add(leaf);
+          
+          // Create simple tomato
+          const tomatoGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+          const tomatoMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xF44336,
+            roughness: 0.4,
+            metalness: 0.2,
+            normalScale: new THREE.Vector2(0, 0),
+            normalMap: null,
+            normalMapType: null
+          });
+          const tomato = new THREE.Mesh(tomatoGeometry, tomatoMaterial);
+          tomato.position.y = 2;
+          tomato.castShadow = true;
+          fallbackModel.add(tomato);
+          
+          tomatoModelRef.current = fallbackModel;
+        }
+      );
+    }
+
+    // For now, let's use a simple carrot geometry instead of the model
+    if (!carrotModelRef.current) {
+      console.log('Creating simple carrot geometry');
+      const carrotGroup = new THREE.Group();
+      
+      // Create carrot body
+      const carrotGeometry = new THREE.ConeGeometry(0.5, 2, 8);
+      const carrotMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
+      const carrotBody = new THREE.Mesh(carrotGeometry, carrotMaterial);
+      carrotBody.rotation.x = Math.PI;
+      carrotBody.position.y = 1;
+      carrotGroup.add(carrotBody);
+
+      // Create carrot top
+      const topGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 8);
+      const topMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+      const carrotTop = new THREE.Mesh(topGeometry, topMaterial);
+      carrotTop.position.y = 2;
+      carrotGroup.add(carrotTop);
+
+      carrotModelRef.current = carrotGroup;
+    }
+
+    return () => {
+      // Cleanup loaders
+      loadersRef.current = [];
+    };
+  }, [sceneRef.current]); // Only run when scene is created
 
   // Shop buy handler
   function handleBuy(seed) {
@@ -471,9 +868,27 @@ function MyN() {
   // Add this function to create plant meshes
   function createPlantMesh(plantType, growthStage) {
     const group = new THREE.Group();
-    
+
+    try {
+      if (plantType.includes('Tomato') && tomatoModelRef.current) {
+        console.log('Creating tomato plant');
+        const tomato = tomatoModelRef.current.clone();
+        tomato.scale.set(2, 2, 2);
+        group.add(tomato);
+        return group;
+      } else if (plantType.includes('Carrot') && carrotModelRef.current) {
+        console.log('Creating carrot plant');
+        const carrot = carrotModelRef.current.clone();
+        carrot.scale.set(2, 2, 2);
+        group.add(carrot);
+        return group;
+      }
+    } catch (error) {
+      console.error('Error creating plant mesh:', error);
+    }
+
+    // Fallback to basic geometry if model loading failed
     if (plantType.includes('Carrot')) {
-      // Carrot plant
       const stem = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
       const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
       stemMesh.position.y = 1;
@@ -490,24 +905,6 @@ function MyN() {
         carrotMesh.position.y = 0.5;
         carrotMesh.rotation.x = Math.PI;
         group.add(carrotMesh);
-      }
-    } else if (plantType.includes('Tomato')) {
-      // Tomato plant
-      const stem = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
-      const stemMesh = new THREE.Mesh(stem, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
-      stemMesh.position.y = 1;
-      group.add(stemMesh);
-
-      const leaves = new THREE.SphereGeometry(0.5, 8, 8);
-      const leavesMesh = new THREE.Mesh(leaves, new THREE.MeshBasicMaterial({ color: 0x228B22 }));
-      leavesMesh.position.y = 1.5;
-      group.add(leavesMesh);
-
-      if (growthStage === 'mature') {
-        const tomato = new THREE.SphereGeometry(0.3, 8, 8);
-        const tomatoMesh = new THREE.Mesh(tomato, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-        tomatoMesh.position.y = 2;
-        group.add(tomatoMesh);
       }
     } else if (plantType.includes('Corn')) {
       // Corn plant
@@ -567,9 +964,24 @@ function MyN() {
     return group;
   }
 
+  // Place this here, NOT inside useEffect!
+  function closeAllShops() {
+    setShowShop(false);
+    setShowEggs(false);
+    setShowGear(false);
+    setShowBonus(false);
+  }
+
   // Render overlays
   return (
-    <div className="world-map" ref={mountRef} style={{ width: '100%', height: '100vh', position: 'relative' }}>
+    <div className="world-map" ref={mountRef} style={{ 
+      width: '100%', 
+      height: '100vh', 
+      position: 'relative',
+      display: 'block',
+      overflow: 'hidden',
+      backgroundColor: '#87CEEB'
+    }}>
       {/* Inventory UI */}
       {showInventory && (
         <div style={{
@@ -860,22 +1272,21 @@ function MyN() {
           onClick={() => {
             const blockPos = prompt.split(':')[1];
             if (!plants[blockPos]) {
-              // Find the first seed in inventory
-              const seedIndex = inventory.findIndex(item => item.name.includes('Seed'));
-              if (seedIndex !== -1) {
-                const seed = inventory[seedIndex];
+              // Use the selected inventory item
+              const selectedItem = inventory[selectedInventoryIndex];
+              if (selectedItem && selectedItem.name.includes('Seed')) {
                 // Remove the seed from inventory first
                 setInventory(inv => {
                   const newInv = [...inv];
-                  newInv.splice(seedIndex, 1);
+                  newInv.splice(selectedInventoryIndex, 1);
                   return newInv;
                 });
                 // Then plant it
-                setPlants(pl => ({ ...pl, [blockPos]: seed.name }));
+                setPlants(pl => ({ ...pl, [blockPos]: selectedItem.name }));
                 setPlantGrowth(pl => ({ ...pl, [blockPos]: 0 }));
-                console.log('Planting:', seed.name);
+                console.log('Planting:', selectedItem.name);
               } else {
-                console.log('No seeds in inventory');
+                console.log('Select a seed in your inventory to plant.');
               }
             } else {
               console.log('Block already has a plant');
@@ -899,10 +1310,10 @@ function MyN() {
             color: '#000'
           }}
         >
-          {inventory.some(item => item.name.includes('Seed')) ? (
-            <>Click to plant seed</>
+          {inventory[selectedInventoryIndex] && inventory[selectedInventoryIndex].name.includes('Seed') ? (
+            <>Click to plant <b>{inventory[selectedInventoryIndex].name}</b></>
           ) : (
-            <>No seeds in inventory</>
+            <>Select a seed in your inventory to plant</>
           )}
         </button>
       )}

@@ -17,14 +17,13 @@ const GodotGame = () => {
       display: 'flex',
       flexDirection: 'column',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-      position: 'fixed',
+      position: 'absolute',
       top: 0,
       left: '120px',
       right: 0,
       bottom: 0,
-      width: '90vw',
-      height: '90vh',
-      margin: 'auto'
+      width: 'calc(100vw - 120px)',
+      height: '100vh'
     }}>
       <div className="game-header" style={{ 
         padding: '5px',

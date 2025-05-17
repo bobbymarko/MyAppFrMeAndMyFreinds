@@ -16,6 +16,11 @@ import { awsConfig } from './aws-config';
 import Game from './pages/Game';
 import Games from './pages/Games';
 import GodotGame from './pages/GodotGame';
+import GardenGame from './components/GardenGame/GardenGame';
+import MyN from './components/GardenGame/myn';
+import Vid from './components/Vid';
+import TomatoGame from './components/TomatoGame/TomatoGame';
+import './App.css';
 
 const client = new DynamoDBClient(awsConfig);
 const docClient = DynamoDBDocumentClient.from(client);
@@ -96,6 +101,10 @@ function App() {
             <Route path="/games" element={isAdmin ? <Games /> : <Navigate to="/home" />} />
             <Route path="/target-game" element={isAdmin ? <Game /> : <Navigate to="/home" />} />
             <Route path="/godot-game" element={isAdmin ? <GodotGame /> : <Navigate to="/home" />} />
+            <Route path="/garden-game" element={isAdmin ? <GardenGame /> : <Navigate to="/home" />} />
+            <Route path="/cube-game" element={<MyN />} />
+            <Route path="/videos" element={isAdmin ? <Vid /> : <Navigate to="/home" />} />
+            <Route path="/tomato" element={<TomatoGame />} />
           </Routes>
         </div>
       </div>

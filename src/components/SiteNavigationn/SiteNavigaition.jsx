@@ -40,6 +40,8 @@ function SiteNavigaition() {
       <Link to="/orders" style={buttonStyle}>Order</Link>
       <Link to="/Thanks" style={buttonStyle}>Thanks</Link>
 
+      <Link to="/games" style={buttonStyle}>Games</Link>
+
       <hr style={{
         width: '80%',
         border: `1px solid ${LineColor}`,
