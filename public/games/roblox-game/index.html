@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Custom Roblox Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .placeholder {
+            text-align: center;
+            padding: 20px;
+        }
+        .placeholder h1 {
+            color: #00a2ff;
+            margin-bottom: 20px;
+        }
+        .placeholder p {
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+        .instructions {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: left;
+            max-width: 600px;
+        }
+        .instructions h3 {
+            color: #00a2ff;
+            margin-top: 0;
+        }
+        .instructions ol {
+            color: #ccc;
+        }
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        .code {
+            background: #222;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #00ff00;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="placeholder">
+        <h1>🎮 My Custom Roblox Game</h1>
+        <p>This is a placeholder for your exported Roblox game.</p>
+        
+        <div class="instructions">
+            <h3>📋 How to Export Your Roblox Game:</h3>
+            <ol>
+                <li><strong>Open Roblox Studio</strong> with your game</li>
+                <li><strong>Go to File → Export → Export to Web</strong></li>
+                <li><strong>Choose a location</strong> to save the exported files</li>
+                <li><strong>Copy all exported files</strong> to this directory: <code class="code">public/games/roblox-game/</code></li>
+                <li><strong>Replace this file</strong> with your exported <code class="code">index.html</code></li>
+            </ol>
+            
+            <h3>📁 Required Files After Export:</h3>
+            <ul>
+                <li><code class="code">index.html</code> - Main game file (replace this one)</li>
+                <li><code class="code">*.js</code> - JavaScript game files</li>
+                <li><code class="code">*.wasm</code> - WebAssembly files</li>
+                <li><code class="code">*.pck</code> - Game data files</li>
+                <li><code class="code">*.png</code> - Images and icons</li>
+            </ul>
+            
+            <h3>✅ Once Exported:</h3>
+            <p>Your game will automatically load when you select "My Custom Game (Local)" from the dropdown above!</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -8,10 +8,11 @@ const RobloxGame = () => {
 
   // Predefined games you can choose from
   const gameOptions = [
-    { id: 'default', name: 'Default Roblox Game', placeId: '1' },
-    { id: 'adoptme', name: 'Adopt Me', placeId: '920587237' },
-    { id: 'murder', name: 'Murder Mystery 2', placeId: '142823291' },
-    { id: 'custom', name: 'Custom Game', placeId: '' }
+    { id: 'local', name: 'My Custom Game (Local)', placeId: 'local', isLocal: true },
+    { id: 'default', name: 'Default Roblox Game', placeId: '1', isLocal: false },
+    { id: 'adoptme', name: 'Adopt Me', placeId: '920587237', isLocal: false },
+    { id: 'murder', name: 'Murder Mystery 2', placeId: '142823291', isLocal: false },
+    { id: 'custom', name: 'Custom Online Game', placeId: '', isLocal: false }
   ];
 
   useEffect(() => {
@@ -30,7 +31,18 @@ const RobloxGame = () => {
     return game ? game.placeId : '1';
   };
 
-  const getGameEmbedUrl = (placeId) => {
+  const getCurrentGame = () => {
+    if (selectedGame === 'custom') {
+      return { placeId: customGameId || '1', isLocal: false };
+    }
+    const game = gameOptions.find(g => g.id === selectedGame);
+    return game || { placeId: '1', isLocal: false };
+  };
+
+  const getGameEmbedUrl = (placeId, isLocal = false) => {
+    if (isLocal) {
+      return '/games/roblox-game/index.html';
+    }
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
   };
 
@@ -167,7 +179,7 @@ const RobloxGame = () => {
           </div>
         ) : (
           <iframe
-            src={getGameEmbedUrl(getCurrentGameId())}
+            src={getGameEmbedUrl(getCurrentGameId(), getCurrentGame().isLocal)}
             title="Roblox Game"
             style={{
               width: '100%',
