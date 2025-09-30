@@ -44,8 +44,8 @@ const RobloxGame = () => {
     if (isLocal) {
       return '/games/roblox-game/index.html';
     }
-    // Use Roblox's embed URL to keep you on your website
-    return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
+    // Use Roblox's embed URL with additional parameters for better iframe support
+    return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true&robloxEvent=true`;
   };
 
   return (
@@ -130,13 +130,33 @@ const RobloxGame = () => {
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              marginRight: '10px'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#0088cc'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#00a2ff'}
           >
             Load Game
           </button>
+          
+          {!getCurrentGame().isLocal && (
+            <button
+              onClick={() => window.open(`https://www.roblox.com/games/${getCurrentGameId()}/Plants-Vs-Brainrots`, '_blank')}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+            >
+              Open in New Tab
+            </button>
+          )}
         </div>
       </div>
       
