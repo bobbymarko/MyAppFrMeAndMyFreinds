@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import './Game.css'; // Reusing the game styles
 
 const RobloxGame = () => {
-  const [selectedGame, setSelectedGame] = useState('default');
+  const [selectedGame, setSelectedGame] = useState('local');
   const [customGameId, setCustomGameId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Predefined games you can choose from
   const gameOptions = [
-    { id: 'local', name: 'My Custom Game (Local)', placeId: 'local', isLocal: true },
-    { id: 'default', name: 'Default Roblox Game', placeId: '1', isLocal: false },
-    { id: 'adoptme', name: 'Adopt Me', placeId: '920587237', isLocal: false },
-    { id: 'murder', name: 'Murder Mystery 2', placeId: '142823291', isLocal: false },
-    { id: 'custom', name: 'Custom Online Game', placeId: '', isLocal: false }
+    { id: 'local', name: '🎮 My Custom Game (Local)', placeId: 'local', isLocal: true },
+    { id: 'default', name: '🌐 Default Roblox Game (Online)', placeId: '1', isLocal: false },
+    { id: 'adoptme', name: '🌐 Adopt Me (Online)', placeId: '920587237', isLocal: false },
+    { id: 'murder', name: '🌐 Murder Mystery 2 (Online)', placeId: '142823291', isLocal: false },
+    { id: 'custom', name: '🌐 Custom Online Game', placeId: '', isLocal: false }
   ];
 
   useEffect(() => {
