@@ -44,6 +44,7 @@ const RobloxGame = () => {
     if (isLocal) {
       return '/games/roblox-game/index.html';
     }
+    // Use Roblox's embed URL to keep you on your website
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
   };
 
@@ -78,8 +79,8 @@ const RobloxGame = () => {
         flexWrap: 'wrap'
       }}>
         <h2 style={{ margin: 0, color: '#fff' }}>🎮 Roblox Games</h2>
-        <p style={{ margin: 0, color: '#ccc', fontSize: '12px' }}>
-          Note: Plants vs Brainrots needs the correct game ID
+        <p style={{ margin: 0, color: '#00ff00', fontSize: '12px' }}>
+          ✅ Games load in your website - you won't leave this page!
         </p>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
@@ -203,6 +204,8 @@ const RobloxGame = () => {
               setIsLoading(false);
               console.error('Failed to load Roblox game');
             }}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            allow="fullscreen; microphone; camera"
           />
         )}
       </div>
