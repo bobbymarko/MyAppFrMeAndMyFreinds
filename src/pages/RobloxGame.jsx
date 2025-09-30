@@ -9,9 +9,10 @@ const RobloxGame = () => {
   // Predefined games you can choose from
   const gameOptions = [
     { id: 'local', name: '🎮 My Custom Game (Local)', placeId: 'local', isLocal: true },
-    { id: 'default', name: '🌐 Default Roblox Game (Online)', placeId: '1', isLocal: false },
+    { id: 'pvz', name: '🌱 Plants vs Brainrots (Popular!)', placeId: '1234567890', isLocal: false },
     { id: 'adoptme', name: '🌐 Adopt Me (Online)', placeId: '920587237', isLocal: false },
     { id: 'murder', name: '🌐 Murder Mystery 2 (Online)', placeId: '142823291', isLocal: false },
+    { id: 'default', name: '🌐 Default Roblox Game (Online)', placeId: '1', isLocal: false },
     { id: 'custom', name: '🌐 Custom Online Game', placeId: '', isLocal: false }
   ];
 
@@ -24,16 +25,16 @@ const RobloxGame = () => {
   }, []);
 
   const getCurrentGameId = () => {
-    if (selectedGame === 'custom') {
-      return customGameId || '1';
+    if (selectedGame === 'custom' || selectedGame === 'pvz') {
+      return customGameId || (selectedGame === 'pvz' ? '1234567890' : '1');
     }
     const game = gameOptions.find(g => g.id === selectedGame);
     return game ? game.placeId : '1';
   };
 
   const getCurrentGame = () => {
-    if (selectedGame === 'custom') {
-      return { placeId: customGameId || '1', isLocal: false };
+    if (selectedGame === 'custom' || selectedGame === 'pvz') {
+      return { placeId: customGameId || (selectedGame === 'pvz' ? '1234567890' : '1'), isLocal: false };
     }
     const game = gameOptions.find(g => g.id === selectedGame);
     return game || { placeId: '1', isLocal: false };
@@ -77,6 +78,9 @@ const RobloxGame = () => {
         flexWrap: 'wrap'
       }}>
         <h2 style={{ margin: 0, color: '#fff' }}>🎮 Roblox Games</h2>
+        <p style={{ margin: 0, color: '#ccc', fontSize: '12px' }}>
+          Note: Plants vs Brainrots needs the correct game ID
+        </p>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
             value={selectedGame}
@@ -98,10 +102,10 @@ const RobloxGame = () => {
             ))}
           </select>
           
-          {selectedGame === 'custom' && (
+          {(selectedGame === 'custom' || selectedGame === 'pvz') && (
             <input
               type="text"
-              placeholder="Enter Place ID"
+              placeholder={selectedGame === 'pvz' ? "Enter Plants vs Brainrots ID" : "Enter Place ID"}
               value={customGameId}
               onChange={(e) => setCustomGameId(e.target.value)}
               style={{
