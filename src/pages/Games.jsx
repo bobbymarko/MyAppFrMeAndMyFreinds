@@ -23,6 +23,10 @@ const Games = () => {
           <h2>Cube Game</h2>
           <p>Interactive 3D cube experience</p>
         </Link>
+        <Link to="/roblox-game" className="game-card">
+          <h2>Roblox</h2>
+          <p>Play your custom Roblox games</p>
+        </Link>
       </div>
     </div>
   );
