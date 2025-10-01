@@ -67,6 +67,14 @@ const RobloxGame = () => {
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
   };
 
+  const getGamePageUrl = (placeId) => {
+    return `https://www.roblox.com/games/${placeId}`;
+  };
+
+  const getRobloxDeepLink = (placeId) => {
+    return `roblox://placeId=${placeId}`;
+  };
+
   return (
     <div className="game-container" style={{ 
       minHeight: '100vh',
@@ -156,6 +164,36 @@ const RobloxGame = () => {
           >
             Load Game
           </button>
+
+          <a
+            href={getRobloxDeepLink(getCurrentGameId())}
+            style={{
+              padding: '8px 12px',
+              fontSize: '14px',
+              backgroundColor: '#16a34a',
+              color: 'white',
+              borderRadius: '6px',
+              textDecoration: 'none'
+            }}
+          >
+            Play in Roblox
+          </a>
+
+          <a
+            href={getGamePageUrl(getCurrentGameId())}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '8px 12px',
+              fontSize: '14px',
+              backgroundColor: '#374151',
+              color: 'white',
+              borderRadius: '6px',
+              textDecoration: 'none'
+            }}
+          >
+            Open on Roblox.com
+          </a>
         </div>
       </div>
       
