@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import './Game.css'; // Reusing the game styles
 
 const RobloxGame = () => {
-  const [selectedGame, setSelectedGame] = useState('local');
-  const [customGameId, setCustomGameId] = useState('');
+  const [selectedGame, setSelectedGame] = useState('pvz');
+  const [customGameId, setCustomGameId] = useState('127742093697776');
   const [isLoading, setIsLoading] = useState(false);
 
   // Predefined games you can choose from
@@ -44,8 +44,8 @@ const RobloxGame = () => {
     if (isLocal) {
       return '/games/roblox-game/index.html';
     }
-    // Use Roblox's embed URL with additional parameters for better iframe support
-    return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true&robloxEvent=true`;
+    // Use Roblox's embed URL to keep you on your website
+    return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
   };
 
   return (
@@ -130,33 +130,13 @@ const RobloxGame = () => {
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              cursor: 'pointer',
-              marginRight: '10px'
+              cursor: 'pointer'
             }}
             onMouseOver={(e) => e.target.style.backgroundColor = '#0088cc'}
             onMouseOut={(e) => e.target.style.backgroundColor = '#00a2ff'}
           >
             Load Game
           </button>
-          
-          {!getCurrentGame().isLocal && (
-            <button
-              onClick={() => window.open(`https://www.roblox.com/games/${getCurrentGameId()}/Plants-Vs-Brainrots`, '_blank')}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
-            >
-              Open in New Tab
-            </button>
-          )}
         </div>
       </div>
       
