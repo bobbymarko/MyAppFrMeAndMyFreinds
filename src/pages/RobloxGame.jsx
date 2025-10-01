@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import './Game.css'; // Reusing the game styles
 
 const RobloxGame = () => {
-  const [selectedGame, setSelectedGame] = useState('server');
+  const [selectedGame, setSelectedGame] = useState('tycoon');
   const [customGameId, setCustomGameId] = useState('127742093697776');
   const [isLoading, setIsLoading] = useState(false);
   const [localGames, setLocalGames] = useState([]);
 
   // Your local Roblox games
   const localGameFiles = [
+    { id: 'tycoon', name: '🏭 tycoon.rbxl', filename: 'tycoon.rbxl' },
     { id: 'server', name: '🎮 server.rbxl', filename: 'server.rbxl' },
     { id: 'Place_AutoRecovery_0', name: '🔄 Place_AutoRecovery_0.rbxl', filename: 'Place_AutoRecovery_0.rbxl' },
     { id: 'VRFTUX', name: '🎮 VRFTUX.rbxl', filename: 'VRFTUX.rbxl' },
