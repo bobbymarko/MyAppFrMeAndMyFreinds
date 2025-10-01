@@ -2,17 +2,16 @@ import React, { useEffect, useState } from 'react';
 import './Game.css'; // Reusing the game styles
 
 const RobloxGame = () => {
-  const [selectedGame, setSelectedGame] = useState('pvz');
+  const [selectedGame, setSelectedGame] = useState('server');
   const [customGameId, setCustomGameId] = useState('127742093697776');
   const [isLoading, setIsLoading] = useState(false);
 
   // Predefined games you can choose from
   const gameOptions = [
-    { id: 'local', name: '🎮 My Custom Game (Local)', placeId: 'local', isLocal: true },
-    { id: 'pvz', name: '🌱 Plants vs Brainrots (Popular!)', placeId: '1234567890', isLocal: false },
+    { id: 'server', name: '🎮 My Roblox Game (Local Server)', placeId: 'server', isLocal: true },
+    { id: 'pvz', name: '🌱 Plants vs Brainrots (Online)', placeId: '127742093697776', isLocal: false },
     { id: 'adoptme', name: '🌐 Adopt Me (Online)', placeId: '920587237', isLocal: false },
     { id: 'murder', name: '🌐 Murder Mystery 2 (Online)', placeId: '142823291', isLocal: false },
-    { id: 'default', name: '🌐 Default Roblox Game (Online)', placeId: '1', isLocal: false },
     { id: 'custom', name: '🌐 Custom Online Game', placeId: '', isLocal: false }
   ];
 
@@ -42,7 +41,8 @@ const RobloxGame = () => {
 
   const getGameEmbedUrl = (placeId, isLocal = false) => {
     if (isLocal) {
-      return '/games/roblox-game/index.html';
+      // Load from your local server
+      return `http://localhost:3001/games/${placeId}/index.html`;
     }
     // Use Roblox's embed URL to keep you on your website
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;

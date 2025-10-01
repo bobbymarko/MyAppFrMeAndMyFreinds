@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Roblox Game - Local Server</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+        }
+        .game-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #00a2ff;
+        }
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .btn {
+            background: #00a2ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #0088cc;
+            transform: translateY(-2px);
+        }
+        .btn.secondary {
+            background: #28a745;
+        }
+        .btn.secondary:hover {
+            background: #218838;
+        }
+        .file-list {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .file-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="game-title">🎮 My Roblox Games</h1>
+        <div class="game-info">
+            <h3>Local Roblox Game Server</h3>
+            <p>Your Roblox games are hosted on your local server!</p>
+            <p>Click on any game below to play it:</p>
+        </div>
+        
+        <div class="file-list" id="gameList">
+            <h4>Available Games:</h4>
+            <div class="file-item" onclick="loadGame('server')">
+                <strong>🎮 server.rbxl</strong> - Your main Roblox game
+            </div>
+            <div class="file-item" onclick="openInStudio()">
+                <strong>🔧 Open in Roblox Studio</strong> - Edit your game
+            </div>
+        </div>
+        
+        <div>
+            <button class="btn" onclick="loadGame('server')">Play Game</button>
+            <button class="btn secondary" onclick="downloadGame()">Download Game File</button>
+            <button class="btn secondary" onclick="openInStudio()">Open in Studio</button>
+        </div>
+        
+        <div class="game-info">
+            <h4>How to Play:</h4>
+            <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li><strong>Play Game:</strong> Click "Play Game" to load your game in the browser</li>
+                <li><strong>Download:</strong> Click "Download Game File" to get the .rbxl file</li>
+                <li><strong>Edit:</strong> Click "Open in Studio" to edit your game in Roblox Studio</li>
+                <li><strong>Add More:</strong> Put more .rbxl files in your Roblox folder to see them here</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function loadGame(gameId) {
+            // Try to load the game in an iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = `http://localhost:3001/roblox/${gameId}.rbxl`;
+            iframe.style.width = '100%';
+            iframe.style.height = '100vh';
+            iframe.style.border = 'none';
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.zIndex = '9999';
+            iframe.style.backgroundColor = '#000';
+            
+            document.body.innerHTML = '';
+            document.body.appendChild(iframe);
+        }
+        
+        function downloadGame() {
+            window.open('http://localhost:3001/roblox/server.rbxl', '_blank');
+        }
+        
+        function openInStudio() {
+            // Try to open with Roblox Studio
+            window.location.href = 'roblox-studio:server';
+        }
+        
+        // Load available games from server
+        fetch('http://localhost:3001/api/games')
+            .then(response => response.json())
+            .then(data => {
+                const gameList = document.getElementById('gameList');
+                if (data.games && data.games.length > 0) {
+                    gameList.innerHTML = '<h4>Available Games:</h4>';
+                    data.games.forEach(game => {
+                        const gameItem = document.createElement('div');
+                        gameItem.className = 'file-item';
+                        gameItem.innerHTML = `<strong>🎮 ${game.name}</strong> - ${game.filename}`;
+                        gameItem.onclick = () => loadGame(game.id);
+                        gameList.appendChild(gameItem);
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Server not running or no games found');
+            });
+    </script>
+</body>
+</html>
