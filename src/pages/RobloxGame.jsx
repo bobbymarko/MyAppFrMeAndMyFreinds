@@ -61,7 +61,7 @@ const RobloxGame = () => {
   const getGameEmbedUrl = (placeId, isLocal = false) => {
     if (isLocal) {
       // For local games, use the template that shows all games
-      return `http://localhost:3001/games/template/index.html`;
+      return `/games/template/index.html`;
     }
     // Use Roblox's embed URL to keep you on your website
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
