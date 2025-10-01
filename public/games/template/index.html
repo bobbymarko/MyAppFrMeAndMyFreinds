@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Game - Local Server</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+        }
+        .game-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #00a2ff;
+        }
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .btn {
+            background: #00a2ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #0088cc;
+            transform: translateY(-2px);
+        }
+        .btn.secondary {
+            background: #28a745;
+        }
+        .btn.secondary:hover {
+            background: #218838;
+        }
+        .game-list {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .game-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #00a2ff;
+        }
+        .game-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        .game-item h4 {
+            margin: 0 0 5px 0;
+            color: #00a2ff;
+        }
+        .game-item p {
+            margin: 0;
+            color: #ccc;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="game-title">🎮 All Your Roblox Games</h1>
+        <div class="game-info">
+            <h3>Local Roblox Game Server</h3>
+            <p>All your Roblox games are hosted on your local server!</p>
+            <p>Click on any game below to play it:</p>
+        </div>
+        
+        <div class="game-list" id="gameList">
+            <h4>Available Games:</h4>
+            <!-- Games will be loaded dynamically -->
+        </div>
+        
+        <div>
+            <button class="btn" onclick="refreshGames()">🔄 Refresh Games</button>
+            <button class="btn secondary" onclick="openAllInStudio()">🔧 Open All in Studio</button>
+        </div>
+        
+        <div class="game-info">
+            <h4>How to Play:</h4>
+            <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li><strong>Click any game</strong> to load it in the browser</li>
+                <li><strong>Download:</strong> Right-click and "Save as" to download .rbxl files</li>
+                <li><strong>Edit:</strong> Click "Open All in Studio" to edit games in Roblox Studio</li>
+                <li><strong>Add More:</strong> Put more .rbxl files in your Roblox folder to see them here</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        const games = [
+            { id: 'server', name: '🎮 server.rbxl', filename: 'server.rbxl', description: 'Your main Roblox game' },
+            { id: 'Place_AutoRecovery_0', name: '🔄 Place_AutoRecovery_0.rbxl', filename: 'Place_AutoRecovery_0.rbxl', description: 'Auto-saved game recovery' },
+            { id: 'VRFTUX', name: '🎮 VRFTUX.rbxl', filename: 'VRFTUX.rbxl', description: 'VR testing game' },
+            { id: 'UserSafetyTest', name: '🛡️ UserSafetyTest.rbxl', filename: 'UserSafetyTest.rbxl', description: 'User safety testing' },
+            { id: 'RhodiumUnitTest', name: '🧪 RhodiumUnitTest.rbxl', filename: 'RhodiumUnitTest.rbxl', description: 'Unit testing game' },
+            { id: 'MobileChatPlace', name: '📱 MobileChatPlace.rbxl', filename: 'MobileChatPlace.rbxl', description: 'Mobile chat testing' },
+            { id: 'Mobile', name: '📱 Mobile.rbxl', filename: 'Mobile.rbxl', description: 'Mobile game testing' },
+            { id: 'Maquettes', name: '🎨 Maquettes.rbxl', filename: 'Maquettes.rbxl', description: '3D model testing' }
+        ];
+        
+        function loadGameList() {
+            const gameList = document.getElementById('gameList');
+            gameList.innerHTML = '<h4>Available Games:</h4>';
+            
+            games.forEach(game => {
+                const gameItem = document.createElement('div');
+                gameItem.className = 'game-item';
+                gameItem.innerHTML = `
+                    <h4>${game.name}</h4>
+                    <p>${game.description}</p>
+                `;
+                gameItem.onclick = () => loadGame(game);
+                gameList.appendChild(gameItem);
+            });
+        }
+        
+        function loadGame(game) {
+            // Try to load the game in an iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = `http://localhost:3001/roblox/${game.filename}`;
+            iframe.style.width = '100%';
+            iframe.style.height = '100vh';
+            iframe.style.border = 'none';
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.zIndex = '9999';
+            iframe.style.backgroundColor = '#000';
+            
+            document.body.innerHTML = '';
+            document.body.appendChild(iframe);
+        }
+        
+        function refreshGames() {
+            loadGameList();
+        }
+        
+        function openAllInStudio() {
+            // Try to open all games with Roblox Studio
+            games.forEach(game => {
+                setTimeout(() => {
+                    window.open(`roblox-studio:${game.id}`, '_blank');
+                }, 1000);
+            });
+        }
+        
+        // Load games on page load
+        loadGameList();
+    </script>
+</body>
+</html>

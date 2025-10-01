@@ -5,14 +5,32 @@ const RobloxGame = () => {
   const [selectedGame, setSelectedGame] = useState('server');
   const [customGameId, setCustomGameId] = useState('127742093697776');
   const [isLoading, setIsLoading] = useState(false);
+  const [localGames, setLocalGames] = useState([]);
 
-  // Predefined games you can choose from
-  const gameOptions = [
-    { id: 'server', name: '🎮 My Roblox Game (Local Server)', placeId: 'server', isLocal: true },
+  // Your local Roblox games
+  const localGameFiles = [
+    { id: 'server', name: '🎮 server.rbxl', filename: 'server.rbxl' },
+    { id: 'Place_AutoRecovery_0', name: '🔄 Place_AutoRecovery_0.rbxl', filename: 'Place_AutoRecovery_0.rbxl' },
+    { id: 'VRFTUX', name: '🎮 VRFTUX.rbxl', filename: 'VRFTUX.rbxl' },
+    { id: 'UserSafetyTest', name: '🛡️ UserSafetyTest.rbxl', filename: 'UserSafetyTest.rbxl' },
+    { id: 'RhodiumUnitTest', name: '🧪 RhodiumUnitTest.rbxl', filename: 'RhodiumUnitTest.rbxl' },
+    { id: 'MobileChatPlace', name: '📱 MobileChatPlace.rbxl', filename: 'MobileChatPlace.rbxl' },
+    { id: 'Mobile', name: '📱 Mobile.rbxl', filename: 'Mobile.rbxl' },
+    { id: 'Maquettes', name: '🎨 Maquettes.rbxl', filename: 'Maquettes.rbxl' }
+  ];
+
+  // Online games
+  const onlineGames = [
     { id: 'pvz', name: '🌱 Plants vs Brainrots (Online)', placeId: '127742093697776', isLocal: false },
     { id: 'adoptme', name: '🌐 Adopt Me (Online)', placeId: '920587237', isLocal: false },
     { id: 'murder', name: '🌐 Murder Mystery 2 (Online)', placeId: '142823291', isLocal: false },
     { id: 'custom', name: '🌐 Custom Online Game', placeId: '', isLocal: false }
+  ];
+
+  // Combine all games
+  const gameOptions = [
+    ...localGameFiles.map(game => ({ ...game, isLocal: true, placeId: game.id })),
+    ...onlineGames
   ];
 
   useEffect(() => {
@@ -41,8 +59,8 @@ const RobloxGame = () => {
 
   const getGameEmbedUrl = (placeId, isLocal = false) => {
     if (isLocal) {
-      // Load from your local server
-      return `http://localhost:3001/games/${placeId}/index.html`;
+      // For local games, use the template that shows all games
+      return `http://localhost:3001/games/template/index.html`;
     }
     // Use Roblox's embed URL to keep you on your website
     return `https://www.roblox.com/games/embed/${placeId}?autostart=true&autoplay=true`;
@@ -78,9 +96,9 @@ const RobloxGame = () => {
         gap: '15px',
         flexWrap: 'wrap'
       }}>
-        <h2 style={{ margin: 0, color: '#fff' }}>🎮 Roblox Games</h2>
+        <h2 style={{ margin: 0, color: '#fff' }}>🎮 All Your Roblox Games</h2>
         <p style={{ margin: 0, color: '#00ff00', fontSize: '12px' }}>
-          ✅ Games load in your website - you won't leave this page!
+          ✅ All your .rbxl files + online games - play everything on your website!
         </p>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
