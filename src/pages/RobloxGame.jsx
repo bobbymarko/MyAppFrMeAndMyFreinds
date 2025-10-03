@@ -6,6 +6,8 @@ const RobloxGame = () => {
   const [customGameId, setCustomGameId] = useState('127742093697776');
   const [isLoading, setIsLoading] = useState(false);
   const [localGames, setLocalGames] = useState([]);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [embedError, setEmbedError] = useState(false);
 
   // Your local Roblox games
   const localGameFiles = [
@@ -149,7 +151,11 @@ const RobloxGame = () => {
           )}
           
           <button
-            onClick={() => setIsLoading(true)}
+            onClick={() => {
+              setIsLoading(true);
+              setShowEmbed(true);
+              setEmbedError(false);
+            }}
             style={{
               padding: '8px 16px',
               fontSize: '14px',
@@ -239,6 +245,129 @@ const RobloxGame = () => {
               <p style={{ color: '#ccc' }}>Please wait while the game loads</p>
             </div>
           </div>
+        ) : !showEmbed ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#000',
+            color: '#fff',
+            textAlign: 'center',
+            padding: '40px'
+          }}>
+            <div style={{ marginBottom: '30px' }}>
+              <h2 style={{ color: '#00a2ff', marginBottom: '20px' }}>🎮 Ready to Play!</h2>
+              <p style={{ color: '#ccc', fontSize: '18px', marginBottom: '30px' }}>
+                Select a game above and click "Load Game" to start playing, or use the buttons to launch directly in Roblox!
+              </p>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setShowEmbed(true);
+                    setEmbedError(false);
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    backgroundColor: '#00a2ff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🎮 Load Game Preview
+                </button>
+                <a
+                  href={getRobloxDeepLink(getCurrentGameId())}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    display: 'inline-block'
+                  }}
+                >
+                  🚀 Play in Roblox
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : embedError ? (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#000',
+            color: '#fff',
+            textAlign: 'center',
+            padding: '40px'
+          }}>
+            <div style={{ marginBottom: '30px' }}>
+              <h2 style={{ color: '#ef4444', marginBottom: '20px' }}>⚠️ Embed Not Available</h2>
+              <p style={{ color: '#ccc', fontSize: '18px', marginBottom: '30px' }}>
+                This game can't be embedded, but you can still play it directly in Roblox!
+              </p>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <a
+                  href={getRobloxDeepLink(getCurrentGameId())}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    display: 'inline-block'
+                  }}
+                >
+                  🚀 Play in Roblox
+                </a>
+                <a
+                  href={getGamePageUrl(getCurrentGameId())}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    backgroundColor: '#374151',
+                    color: 'white',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    display: 'inline-block'
+                  }}
+                >
+                  🌐 Open on Roblox.com
+                </a>
+                <button
+                  onClick={() => {
+                    setShowEmbed(false);
+                    setEmbedError(false);
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ← Back to Game Selection
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           <iframe
             src={getGameEmbedUrl(getCurrentGameId(), getCurrentGame().isLocal)}
@@ -256,9 +385,26 @@ const RobloxGame = () => {
               right: 0,
               bottom: 0
             }}
-            onLoad={() => setIsLoading(false)}
+            onLoad={() => {
+              setIsLoading(false);
+              // Check if the iframe loaded an error page
+              setTimeout(() => {
+                try {
+                  const iframe = document.querySelector('iframe');
+                  if (iframe && iframe.contentDocument) {
+                    const body = iframe.contentDocument.body;
+                    if (body && (body.textContent.includes('Code:') || body.textContent.includes('ID:'))) {
+                      setEmbedError(true);
+                    }
+                  }
+                } catch (e) {
+                  // Cross-origin error, assume it's working
+                }
+              }, 2000);
+            }}
             onError={() => {
               setIsLoading(false);
+              setEmbedError(true);
               console.error('Failed to load Roblox game');
             }}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
